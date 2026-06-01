@@ -1,0 +1,22 @@
+name: aise4030-trading
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pytorch
+  # GPU support. Switch to `pytorch-cuda=11.8` if your driver is older than 528.33 on Windows.
+  - pytorch-cuda=12.1
+  - pip
+  - pip:
+    - gymnasium
+    - numpy
+    - pandas
+    - matplotlib
+    - pyyaml
+    - yfinance
+    - streamlit
+    - plotly
+    - pytest

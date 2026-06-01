@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pytest)",
+      "Bash(pytest:*)",
+      "Bash(python -m ai_trader:*)",
+      "Bash(python scripts/check_actions.py)",
+      "Bash(python scripts/gen_plots.py)",
+      "Bash(python scripts/train.py:*)",
+      "Bash(streamlit run scripts/demo_app.py)",
+      "Bash(python --version)",
+      "Bash(python -c:*)",
+      "Bash(pip list)",
+      "Bash(pip show:*)",
+      "Bash(conda info)",
+      "Bash(conda env list)",
+      "Bash(git status)",
+      "Bash(git diff)",
+      "Bash(git diff:*)",
+      "Bash(git log)",
+      "Bash(git log:*)",
+      "Bash(git show)",
+      "Bash(git show:*)",
+      "Bash(git branch)",
+      "Bash(git branch:*)"
+    ]
+  }
+}
