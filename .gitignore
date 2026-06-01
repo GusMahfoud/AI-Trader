@@ -1,0 +1,22 @@
+# Model checkpoints (large binaries)
+*.pt
+
+# Python cache + build artefacts
+__pycache__/
+*.egg-info/
+build/
+dist/
+
+# Virtual environments
+.venv/
+venv/
+
+# IDE
+.vscode/
+
+# macOS
+.DS_Store
+
+# Scratch/archive directories
+runs/
+archived_results/

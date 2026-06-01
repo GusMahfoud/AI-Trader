@@ -1,0 +1,79 @@
+"""Evaluation helpers: summarize_episode metrics + buy_and_hold curve."""
+
+from __future__ import annotations
+
+import numpy as np
+
+from ai_trader.training.evaluate import (
+    buy_and_hold_curve,
+    evaluate_random_policy,
+    summarize_episode,
+)
+from ai_trader.env import make_env_bundle
+
+
+def test_summarize_empty_equity_returns_safe_defaults():
+    out = summarize_episode({}, initial_cash=10_000.0)
+    assert out["final_value"] == 10_000.0
+    assert out["total_return"] == 0.0
+    assert out["num_trades"] == 0.0
+
+
+def test_summarize_constant_equity_has_zero_return_and_dd():
+    info = {
+        "equity_curve": [10_000.0] * 5,
+        "action_history": [0, 0, 0, 0],
+    }
+    out = summarize_episode(info, initial_cash=10_000.0)
+    assert out["total_return"] == 0.0
+    assert out["max_drawdown"] == 0.0
+    assert out["num_trades"] == 0.0
+
+
+def test_summarize_counts_buys_and_sells_as_trades():
+    info = {
+        "equity_curve": [10_000.0, 10_100.0],
+        "action_history": [0, 1, 2, 2, 0],
+    }
+    out = summarize_episode(info, initial_cash=10_000.0)
+    assert out["num_trades"] == 3.0  # one sell + two buys
+    assert out["total_return"] > 0
+
+
+def test_summarize_drawdown_is_negative_after_peak_then_fall():
+    info = {
+        "equity_curve": [10_000.0, 12_000.0, 11_000.0, 9_000.0],
+        "action_history": [0, 0, 0],
+    }
+    out = summarize_episode(info, initial_cash=10_000.0)
+    # Peak = 12_000, trough = 9_000 → -25% drawdown.
+    assert out["max_drawdown"] < 0
+    np.testing.assert_allclose(out["max_drawdown"], -0.25, rtol=1e-6)
+
+
+def test_buy_and_hold_curve_starts_at_initial_cash():
+    prices = [100.0, 105.0, 110.0, 102.0]
+    curve = buy_and_hold_curve(prices, initial_cash=10_000.0)
+    assert len(curve) == len(prices)
+    np.testing.assert_allclose(curve[0], 10_000.0, rtol=1e-6)
+
+
+def test_buy_and_hold_curve_tracks_price_proportionally():
+    prices = [100.0, 200.0]
+    curve = buy_and_hold_curve(prices, initial_cash=10_000.0)
+    np.testing.assert_allclose(curve[1], 20_000.0, rtol=1e-6)
+
+
+def test_random_policy_returns_expected_keys(synthetic_config):
+    _, _, test_env = make_env_bundle(synthetic_config)
+    metrics = evaluate_random_policy(test_env, episodes=1, max_steps=20, seed=42)
+    for key in (
+        "avg_reward",
+        "std_reward",
+        "avg_total_return",
+        "avg_final_value",
+        "avg_max_drawdown",
+        "avg_sharpe",
+        "avg_num_trades",
+    ):
+        assert key in metrics
