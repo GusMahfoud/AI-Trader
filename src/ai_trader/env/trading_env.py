@@ -13,7 +13,7 @@ try:
 except ImportError as exc:
     raise ImportError("gymnasium is required. Install with: pip install gymnasium") from exc
 
-from .data import DataBundle, build_data_bundle
+from ai_trader.data import DataBundle, build_data_bundle
 
 
 class TradingEnv(gym.Env):
