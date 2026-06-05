@@ -1,4 +1,4 @@
-name: aise4030-trading
+name: ai-trader
 channels:
   - pytorch
   - nvidia

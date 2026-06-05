@@ -45,7 +45,7 @@ New directories must fit this layout. If a new concern doesn't map to an existin
 
 ## Environment & install
 
-The project targets Python 3.10 inside a conda env named `aise4030-trading`. Recreate it with `conda env create -f environment.yml && conda activate aise4030-trading`, then `pip install -e .` to register the `ai_trader` package.
+The project targets Python 3.10 inside a conda env named `ai-trader`. Recreate it with `conda env create -f environment.yml && conda activate ai-trader`, then `pip install -e .` to register the `ai_trader` package.
 
 You don't strictly need the editable install — `scripts/_bootstrap.py` (imported as `_bootstrap` at the top of every script under `scripts/`) prepends `src/` to `sys.path`. Same trick lives in `tests/conftest.py`, which is why pytest works from a fresh checkout.
 
