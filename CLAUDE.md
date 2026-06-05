@@ -2,6 +2,47 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Code Quality Rules
+
+These rules apply to every file in this repo. They are non-negotiable.
+
+- **300-line soft limit** — if a file is approaching 300 lines, split it before adding more code.
+- **1 000-line hard limit** — no file may ever exceed 1 000 lines. No exceptions.
+- **Single responsibility** — each module does one thing. Avoid "utils.py" god-files; name modules by what they contain (`features.py`, `splits.py`, `per_buffer.py`).
+- **No comments explaining WHAT** — only add a comment when the WHY is non-obvious (hidden constraint, subtle invariant, specific bug workaround). If removing the comment wouldn't confuse a future reader, don't write it.
+- **Type hints on all public functions** — required. CI will enforce `mypy`.
+- **No `print()` in library code** (`src/ai_trader/`) — use the structured logger from `utils/logging.py` once it exists; until then, raise or return instead of printing.
+- **Test every new module** — each new file under `src/` must have a corresponding test file under `tests/unit/`.
+- **No look-ahead bias** — feature normalization must use train-split statistics only. Never fit a scaler on val/test data.
+
+## Folder Structure
+
+```
+AI Trader/
+├── src/ai_trader/
+│   ├── agents/      # One file per agent class
+│   ├── data/        # loader.py, features.py, splits.py  (replaces env/data.py)
+│   ├── env/         # Gymnasium environments only
+│   ├── models/      # Network architectures + replay buffers
+│   ├── training/    # Train / eval / compare orchestrators
+│   ├── risk/        # Position sizing, stop-loss, VaR metrics
+│   ├── viz/         # Charts (one file per chart family)
+│   ├── api/         # FastAPI routes (future)
+│   └── utils/       # Small, focused helpers
+├── app/             # Streamlit dashboard as a proper package
+│   ├── main.py
+│   ├── pages/       # One file per dashboard page
+│   └── components/  # Reusable UI widgets
+├── scripts/         # Thin CLI entry-points only (< 50 lines each)
+├── tests/
+│   ├── unit/
+│   └── integration/
+├── config/          # base.yaml + experiment overrides (future)
+└── docker/          # Dockerfile, compose (future)
+```
+
+New directories must fit this layout. If a new concern doesn't map to an existing directory, discuss placement in the PR description before creating an ad-hoc folder.
+
 ## Environment & install
 
 The project targets Python 3.10 inside a conda env named `aise4030-trading`. Recreate it with `conda env create -f environment.yml && conda activate aise4030-trading`, then `pip install -e .` to register the `ai_trader` package.
