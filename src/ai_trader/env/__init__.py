@@ -1,4 +1,4 @@
-from .data import DataBundle, FEATURE_COLUMNS, build_data_bundle
+from ai_trader.data import DataBundle, FEATURE_COLUMNS, build_data_bundle
 from .trading_env import TradingEnv, make_env, make_env_bundle
 
 __all__ = [
