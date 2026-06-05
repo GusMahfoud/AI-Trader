@@ -29,12 +29,12 @@ Already have Anaconda or Miniforge? Both work — no need to reinstall.
 
 ## 2. Quick Start (Full Run)
 
-Run these from the `AISE4030/` directory inside Anaconda Prompt.
+Run these from the project root inside Anaconda Prompt.
 
 ```bash
 # Create + activate the environment (pulls PyTorch + all pip deps)
 conda env create -f environment.yml
-conda activate aise4030-trading
+conda activate ai-trader
 
 # Install this project as an editable package (registers `ai_trader`)
 pip install -e .
@@ -107,9 +107,9 @@ If `CUDA: True`, training will use the GPU automatically (`device: "cuda"` is se
 
 ```bash
 conda deactivate
-conda env remove -n aise4030-trading
+conda env remove -n ai-trader
 conda env create -f environment.yml
-conda activate aise4030-trading
+conda activate ai-trader
 pip install -e .
 ```
 
@@ -132,7 +132,7 @@ What's covered: replay buffer ring + sampling, Q-network forward shapes, trading
 ## 8. Project Structure
 
 ```
-AISE4030/
+AI Trader/
 ├── README.md
 ├── pyproject.toml             # package metadata + console entry
 ├── environment.yml            # conda spec
