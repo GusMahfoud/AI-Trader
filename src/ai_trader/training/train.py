@@ -30,6 +30,9 @@ def train(cfg: Dict[str, Any], out_dir: str) -> None:
         action_dim=int(train_env.action_space.n),
     )
 
+    ckpt_dir = Path(out_dir) / "checkpoints"
+    ckpt_dir.mkdir(parents=True, exist_ok=True)
+
     logger = DQNTrainingLogger()
     best_val_reward = -np.inf
 
@@ -65,12 +68,12 @@ def train(cfg: Dict[str, Any], out_dir: str) -> None:
                 f"drawdown={eval_metrics['avg_max_drawdown']:.3%}"
             )
 
-            latest_ckpt = Path(out_dir) / "double_dqn_latest.pt"
+            latest_ckpt = ckpt_dir / "double_dqn_latest.pt"
             agent.save(str(latest_ckpt))
 
             if eval_reward > best_val_reward:
                 best_val_reward = eval_reward
-                best_path = Path(out_dir) / "double_dqn_best.pt"
+                best_path = ckpt_dir / "double_dqn_best.pt"
                 agent.save(str(best_path))
                 print(f"  New best checkpoint: {best_path}")
 
@@ -88,10 +91,12 @@ def train(cfg: Dict[str, Any], out_dir: str) -> None:
     elapsed = time.time() - start_time
     print(f"=== Training Complete ({elapsed:.1f}s) ===")
 
+    plots_dir = Path(out_dir) / "plots"
+    plots_dir.mkdir(exist_ok=True)
     plot_training_curves(
         logger.episode_rewards,
         logger.episode_losses,
-        Path(out_dir),
+        plots_dir,
         eval_rewards=logger.eval_rewards,
         epsilons=logger.epsilons,
         episode_lengths=logger.episode_lengths,

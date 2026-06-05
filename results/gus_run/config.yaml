@@ -38,12 +38,6 @@ agent:
   epsilon_min: 0.05
   epsilon_decay: 0.995
   tau: 0.001
-  network: "mlp"          # "mlp" | "dueling"
-  replay: "uniform"       # "uniform" | "per"
-  n_steps: 1              # N-step returns (1 = standard TD)
-  per_alpha: 0.6          # PER priority exponent
-  per_beta_start: 0.4     # IS weight start (anneals to 1.0)
-  per_beta_frames: 100000
 
 training:
   seed: 42

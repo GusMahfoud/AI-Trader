@@ -11,99 +11,134 @@ Actions: `0 = hold`, `1 = sell`, `2 = buy`. Reward = scaled portfolio return −
 
 ---
 
-## 1. Install Conda
+## 1. Install Miniconda
 
-This project targets **Miniconda** (lightweight, ~500 MB) — the full Anaconda distribution also works but is overkill. The PyTorch channel and `python=3.10` pinned in [`environment.yml`](environment.yml) work with any Miniconda release from the last couple of years.
-
-1. Download the Miniconda installer for your OS: <https://www.anaconda.com/docs/getting-started/miniconda/install>
-   - Windows: grab the **64-bit Python 3 installer** (`.exe`). The base Python version doesn't need to match 3.10 — the env file pins that separately.
-2. Run the installer. On Windows the recommended options are *Install for: Just Me* and *Register Miniconda as my default Python*. You can skip "Add to PATH" — use the **Anaconda Prompt** that ships with the installer instead.
-3. Open Anaconda Prompt (or any shell where `conda --version` works) and confirm:
+1. Download the installer: <https://www.anaconda.com/docs/getting-started/miniconda/install>
+   - Windows: grab the **64-bit Python 3** `.exe`. The base Python version doesn't matter — the env file pins 3.10 separately.
+2. Run the installer. On Windows: *Install for: Just Me*, skip "Add to PATH" — use **Anaconda Prompt** instead.
+3. Confirm it works:
    ```bash
    conda --version
    ```
 
-Already have Anaconda or Miniforge? Both work — no need to reinstall.
+Already have Anaconda or Miniforge? Both work.
 
 ---
 
-## 2. Quick Start (Full Run)
+## 2. Setup
 
-Run these from the project root inside Anaconda Prompt.
+Run from the project root in Anaconda Prompt.
 
 ```bash
-# Create + activate the environment (pulls PyTorch + all pip deps)
+# Create + activate the environment
 conda env create -f environment.yml
 conda activate ai-trader
 
-# Install this project as an editable package (registers `ai_trader`)
+# Register the ai_trader package
 pip install -e .
 
 # Sanity check
 python -c "import torch, gymnasium, streamlit; print('OK')"
+```
 
-# Train (writes checkpoints + plots to results/double_dqn/)
+---
+
+## 3. Training
+
+```bash
+# Basic run — results saved to results/YYYYMMDD_HHMMSS/
 python -m ai_trader --mode train
 
-# Evaluate against a random baseline + buy-and-hold on the test split
-python -m ai_trader --mode compare --checkpoint results/double_dqn/double_dqn_best.pt --split test --episodes 10 --seeds 42
+# Named run — results saved to results/my_run/
+python -m ai_trader --mode train --run-id my_run
 
-# Launch the interactive demo
+# Override specific hyperparameters without editing config.yaml
+python -m ai_trader --mode train --run-id high_lr --override experiments/high_lr.yaml
+```
+
+Each run writes a self-contained directory:
+
+```
+results/my_run/
+├── config.yaml          # exact config snapshot
+├── checkpoints/
+│   ├── double_dqn_best.pt
+│   └── double_dqn_latest.pt
+├── plots/
+│   ├── reward_plot.png
+│   └── ...
+├── episode_rewards.csv
+├── episode_losses.csv
+├── episode_lengths.csv
+└── episode_epsilons.csv
+```
+
+---
+
+## 4. Evaluation
+
+```bash
+# Compare DDQN vs Random vs Buy & Hold on the test split
+python -m ai_trader --mode compare \
+  --checkpoint results/my_run/checkpoints/double_dqn_best.pt \
+  --split test --episodes 10 --seeds 42
+
+# Run the trained agent and save a dashboard plot
+python -m ai_trader --mode deploy \
+  --checkpoint results/my_run/checkpoints/double_dqn_best.pt \
+  --split test --episodes 5 --seeds 42,43,44
+```
+
+---
+
+## 5. Dashboard
+
+```bash
 streamlit run scripts/demo_app.py
 ```
 
-> The `scripts/*.py` entry points (`scripts/train.py`, `scripts/demo_app.py`, etc.) also work **without** `pip install -e .` — they bootstrap `src/` onto `sys.path` automatically.
+Three pages: Live Agent Replay (scrub through trades with a slider), Agent vs Buy & Hold race, and an interactive Hyperparameter Explorer.
 
 ---
 
-## 3. CLI Modes
-
-```bash
-python -m ai_trader --mode <mode> [options]
-```
-
-| Mode | Purpose |
-|---|---|
-| `train` | Train the Double DQN agent using `config.yaml` |
-| `deploy --checkpoint <path>` | Run a saved agent on `--split {train,val,test}` over `--episodes N --seeds S1,S2,...` |
-| `compare --checkpoint <path>` | DDQN vs Random vs Buy & Hold side-by-side on the selected split |
-
----
-
-## 4. Configuration
+## 6. Configuration
 
 All hyperparameters live in [`config.yaml`](config.yaml). Common changes:
 
-- `output_dir` — where checkpoints, CSVs, and plots are written (default `results/double_dqn`)
-- `env.data_source` — `"yfinance"` (default), `"csv"`, or `"synthetic"` (offline)
-- `training.episodes` — default `5000`
-- `device` — `"auto"`, `"cuda"`, or `"cpu"`
+| Key | Default | Purpose |
+|---|---|---|
+| `device` | `"cuda"` | `"auto"`, `"cuda"`, or `"cpu"` |
+| `env.data_source` | `"yfinance"` | `"yfinance"`, `"csv"`, or `"synthetic"` |
+| `env.ticker` | `"AAPL"` | Any yfinance-supported ticker |
+| `training.episodes` | `5000` | Total training episodes |
+| `training.eval_every` | `20` | Validate and checkpoint every N episodes |
 
----
+To run a quick experiment without touching `config.yaml`, create a small override file:
 
-## 5. Outputs
-
-Each `output_dir` ends up with:
-
-- `double_dqn_best.pt` / `double_dqn_latest.pt` — checkpoints (gitignored)
-- `episode_rewards.csv`, `episode_losses.csv`, `episode_lengths.csv`, `episode_epsilons.csv`
-- `reward_plot.png`, `loss_plot.png`, `epsilon_plot.png`, `length_plot.png`
-- `deploy_summary_{split}.csv`, `demo_dashboard_{split}.png` (deploy mode)
-- `compare_metrics_{split}.csv`, `compare_dashboard_{split}.png`, `compare_bars_{split}.png` (compare mode)
-
----
-
-## 6. GPU Training
-
-The env file installs **CUDA 12.1** PyTorch by default. To verify the GPU is detected after `conda env create`:
-
-```bash
-python -c "import torch; print('CUDA:', torch.cuda.is_available()); print('Device:', torch.cuda.get_device_name(0)) if torch.cuda.is_available() else None"
+```yaml
+# experiments/fast_dev.yaml
+env:
+  data_source: "synthetic"
+training:
+  episodes: 100
+  eval_every: 10
 ```
 
-If `CUDA: True`, training will use the GPU automatically (`device: "cuda"` is set in [`config.yaml`](config.yaml)).
+```bash
+python -m ai_trader --mode train --run-id fast_dev --override experiments/fast_dev.yaml
+```
 
-**If your driver is older than 528.33 on Windows** (or 525.60 on Linux), edit [`environment.yml`](environment.yml) and change `pytorch-cuda=12.1` to `pytorch-cuda=11.8`, then recreate the env:
+---
+
+## 7. GPU Training
+
+The env file installs **CUDA 12.1** PyTorch by default. Verify after setup:
+
+```bash
+python -c "import torch; print('CUDA:', torch.cuda.is_available())"
+```
+
+**Driver too old (< 528.33 on Windows)?** Edit [`environment.yml`](environment.yml), change `pytorch-cuda=12.1` to `pytorch-cuda=11.8`, then:
 
 ```bash
 conda deactivate
@@ -113,80 +148,90 @@ conda activate ai-trader
 pip install -e .
 ```
 
-**No GPU at all?** Set `device: "cpu"` in `config.yaml` and remove the `pytorch-cuda` line from `environment.yml`.
+**No GPU?** Set `device: "cpu"` in `config.yaml` and remove the `pytorch-cuda` line from `environment.yml`.
 
 ---
 
-## 7. Running Tests
+## 8. Tests
 
-The test suite uses pytest with synthetic OHLCV data — it runs fully offline and finishes in a few seconds.
+Runs fully offline using synthetic data, finishes in seconds.
 
 ```bash
 pytest
+pytest tests/test_env.py          # single file
+pytest -k replay_buffer           # by keyword
 ```
-
-What's covered: replay buffer ring + sampling, Q-network forward shapes, trading env reset/step contract + reward signs + chronological splits, DDQN action selection + train step + checkpoint roundtrip, and the evaluation helpers (`summarize_episode`, `buy_and_hold_curve`).
 
 ---
 
-## 8. Project Structure
+## 9. Project Structure
 
 ```
 AI Trader/
-├── README.md
-├── pyproject.toml             # package metadata + console entry
-├── environment.yml            # conda spec
-├── requirements.txt           # pip alternative
-├── config.yaml                # all hyperparameters
+├── config.yaml                    # all hyperparameters
+├── environment.yml                # conda env spec
+├── pyproject.toml                 # package metadata
 │
 ├── src/ai_trader/
-│   ├── cli.py                 # argparse entry point
-│   ├── __main__.py            # `python -m ai_trader`
 │   ├── agents/
-│   │   └── double_dqn.py      # DDQN + build_agent factory
+│   │   └── double_dqn.py          # DDQN + build_agent factory
+│   ├── data/                      # data pipeline
+│   │   ├── loader.py              #   CSV / yfinance / synthetic loading
+│   │   ├── features.py            #   RSI, SMA/EMA, momentum indicators
+│   │   ├── splits.py              #   chronological train/val/test split
+│   │   └── bundle.py              #   DataBundle + build_data_bundle
 │   ├── env/
-│   │   ├── data.py            # data loading, features, splits
-│   │   └── trading_env.py     # Gymnasium env + portfolio accounting
+│   │   └── trading_env.py         # Gymnasium env + portfolio accounting
 │   ├── models/
-│   │   ├── q_network.py       # MLP (256-256-128)
-│   │   └── replay_buffer.py   # pre-allocated numpy ring buffer
+│   │   ├── q_network.py           # MLP Q-network
+│   │   └── replay_buffer.py       # pre-allocated numpy ring buffer
 │   ├── training/
-│   │   ├── train.py           # training loop
-│   │   ├── deploy.py          # single-agent eval
-│   │   ├── compare.py         # DDQN vs Random vs B&H
-│   │   ├── evaluate.py        # rollouts, metrics, summaries
-│   │   └── logger.py          # CSV metric logger
+│   │   ├── train.py               # training loop
+│   │   ├── deploy.py              # single-agent eval
+│   │   ├── compare.py             # DDQN vs Random vs B&H
+│   │   ├── evaluate.py            # rollouts, metrics, summaries
+│   │   └── logger.py              # CSV metric logger
 │   ├── viz/
-│   │   ├── style.py           # shared dark palette + rcParams + plotly layout
-│   │   ├── training_plots.py  # training-curve charts
-│   │   └── comparison_plots.py# deployment dashboard + comparison bars
+│   │   ├── style.py               # shared dark theme
+│   │   ├── training_plots.py      # training-curve charts
+│   │   └── comparison_plots.py    # deployment dashboard + comparison bars
 │   └── utils/
-│       ├── config.py          # YAML loader + ensure_dir
-│       ├── seeding.py         # set_seed
-│       ├── torch_utils.py     # device selection, tensor helpers, target-net updates
-│       └── checkpoint.py      # save/load
+│       ├── config.py              # YAML loader + deep_merge
+│       ├── run.py                 # make_run_id
+│       ├── checkpoint.py          # save/load
+│       ├── seeding.py             # set_seed
+│       └── torch_utils.py         # device, tensor helpers, Polyak updates
 │
-├── scripts/                   # thin convenience entries (work without pip install)
+├── app/                           # Streamlit dashboard package
+│   ├── helpers.py                 # cached loaders + episode runner
+│   └── pages/
+│       ├── replay.py              # Live Agent Replay page
+│       ├── race.py                # Agent vs Buy & Hold page
+│       └── explorer.py            # Hyperparameter Explorer page
+│
+├── scripts/                       # thin entry-points
+│   ├── demo_app.py                # streamlit run target
 │   ├── train.py
-│   ├── demo_app.py            # Streamlit dashboard
-│   ├── check_actions.py       # sanity check action distribution
-│   └── gen_plots.py           # rebuild plots from CSVs
+│   ├── check_actions.py
+│   └── gen_plots.py               # rebuild plots: --run-dir results/my_run
 │
-├── results/
-│   └── double_dqn/            # checkpoints + CSVs + plots
+├── results/                       # one subdirectory per run (gitignored)
 │
-└── tests/                     # pytest suite (synthetic data, offline)
+└── tests/
+    ├── unit/
+    ├── integration/
+    └── conftest.py
 ```
 
 ---
 
-## 9. Troubleshooting
+## 10. Troubleshooting
 
 | Issue | Fix |
 |---|---|
-| `conda: command not found` | Open **Anaconda Prompt** instead of regular cmd/PowerShell, or re-run the installer with *Add to PATH* checked |
-| `ModuleNotFoundError: ai_trader` | Run `pip install -e .` inside the activated env, or use a `scripts/*.py` entry point |
+| `conda: command not found` | Use **Anaconda Prompt**, or re-run installer with *Add to PATH* |
+| `ModuleNotFoundError: ai_trader` | Run `pip install -e .` inside the activated env |
 | Agent only holds | Check `reward_scale` and `inactivity_penalty` in `config.yaml` are non-zero |
-| `device=cuda requested but torch.cuda.is_available() is False` | Recreate the env (see section 6) — most likely `pytorch-cuda` wasn't installed, or your NVIDIA driver is too old |
-| yfinance download fails | Set `env.data_source: "synthetic"` in `config.yaml` for offline runs |
-| Demo can't find checkpoints | Train first — `.pt` files are gitignored |
+| `device=cuda requested but not available` | See section 7 — driver too old or `pytorch-cuda` not installed |
+| yfinance download fails | Set `env.data_source: "synthetic"` for offline runs |
+| Dashboard can't find checkpoints | Train first — `.pt` files are gitignored; point the sidebar to the correct run dir |

@@ -9,7 +9,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from ai_trader.models import QNetwork, ReplayBuffer
+from ai_trader.models import DuelingQNetwork, PrioritizedReplayBuffer, QNetwork, ReplayBuffer
 from ai_trader.utils import (
     get_device,
     hard_update,
@@ -18,6 +18,8 @@ from ai_trader.utils import (
     soft_update,
     to_tensor,
 )
+
+_NETWORKS = {"mlp": QNetwork, "dueling": DuelingQNetwork}
 
 
 class DoubleDQNAgent:
@@ -38,9 +40,11 @@ class DoubleDQNAgent:
         self.epsilon_min = float(config.get("epsilon_min", 0.05))
         self.epsilon_decay = float(config.get("epsilon_decay", 0.995))
         self.tau = float(config.get("tau", 0.001))
+        self.n_steps = int(config.get("n_steps", 1))
 
-        self.q_net = QNetwork(self.state_dim, self.action_dim).to(self.device)
-        self.target_net = QNetwork(self.state_dim, self.action_dim).to(self.device)
+        network_cls = _NETWORKS[config.get("network", "mlp")]
+        self.q_net = network_cls(self.state_dim, self.action_dim).to(self.device)
+        self.target_net = network_cls(self.state_dim, self.action_dim).to(self.device)
         hard_update(self.target_net, self.q_net)
 
         self.optimizer = optim.Adam(self.q_net.parameters(), lr=float(config["learning_rate"]))
@@ -48,8 +52,22 @@ class DoubleDQNAgent:
         # Halve LR every 1500 episodes so late-training fine-tunes instead of oscillating.
         self.lr_scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=1500, gamma=0.5)
 
-        self.replay_buffer = ReplayBuffer(int(config["buffer_size"]), self.state_dim)
-        self._loss_fn = nn.SmoothL1Loss()
+        replay_type = config.get("replay", "uniform")
+        buffer_size = int(config["buffer_size"])
+        if replay_type == "per":
+            alpha = float(config.get("per_alpha", 0.6))
+            self.replay_buffer: ReplayBuffer | PrioritizedReplayBuffer = PrioritizedReplayBuffer(
+                buffer_size, self.state_dim, alpha=alpha
+            )
+            self._per_beta = float(config.get("per_beta_start", 0.4))
+            self._per_beta_frames = int(config.get("per_beta_frames", 100_000))
+            self._per_beta_increment = (1.0 - self._per_beta) / self._per_beta_frames
+        else:
+            self.replay_buffer = ReplayBuffer(buffer_size, self.state_dim)
+            self._per_beta = 1.0
+            self._per_beta_increment = 0.0
+
+        self._loss_fn = nn.SmoothL1Loss(reduction="none")
 
     def choose_action(self, state: np.ndarray, explore: bool = True) -> int:
         if explore and np.random.rand() < self.epsilon:
@@ -67,7 +85,18 @@ class DoubleDQNAgent:
         if len(self.replay_buffer) < self.batch_size:
             return None
 
-        states, actions, rewards, next_states, dones = self.replay_buffer.sample(self.batch_size)
+        use_per = isinstance(self.replay_buffer, PrioritizedReplayBuffer)
+        beta = min(1.0, self._per_beta)
+
+        if use_per:
+            states, actions, rewards, next_states, dones, indices, weights = (
+                self.replay_buffer.sample(self.batch_size, beta=beta)
+            )
+            self._per_beta += self._per_beta_increment
+            weights_t = to_tensor(weights, self.device)
+        else:
+            states, actions, rewards, next_states, dones = self.replay_buffer.sample(self.batch_size)
+            weights_t = None
 
         states_t = to_tensor(states, self.device)
         actions_t = torch.tensor(actions, dtype=torch.long, device=self.device)
@@ -77,13 +106,21 @@ class DoubleDQNAgent:
 
         q_values = self.q_net(states_t).gather(1, actions_t.unsqueeze(1)).squeeze(1)
 
-        # Double DQN target: online net picks the argmax action, target net evaluates it.
+        # Double DQN target: online net picks argmax action, target net evaluates it.
+        # Use γⁿ for n-step bootstrapping.
         with torch.no_grad():
             next_actions = torch.argmax(self.q_net(next_states_t), dim=1, keepdim=True)
             next_q = self.target_net(next_states_t).gather(1, next_actions).squeeze(1)
-            target_q = rewards_t + self.gamma * next_q * (1 - dones_t)
+            target_q = rewards_t + (self.gamma ** self.n_steps) * next_q * (1 - dones_t)
 
-        loss = self._loss_fn(q_values, target_q)
+        element_losses = self._loss_fn(q_values, target_q)
+
+        if use_per and weights_t is not None:
+            loss = (weights_t * element_losses).mean()
+            td_errors = (target_q - q_values).detach().cpu().numpy()
+            self.replay_buffer.update_priorities(indices, td_errors)
+        else:
+            loss = element_losses.mean()
 
         self.optimizer.zero_grad()
         loss.backward()

@@ -50,13 +50,14 @@ def deploy(
         w.writerows(rows)
     print(f"Saved deploy summary: {summary_path}")
 
-    # Single demo chart using the first seed for the presentation deck.
     demo = run_episode(env, agent, train=False, max_steps=max_steps, seed=seeds[0])
     info = demo["final_info"]
     prices = info.get("price_history", [])
     bh = buy_and_hold_curve(prices, initial_cash=float(getattr(env, "initial_cash", 10_000.0)))
 
-    demo_plot_path = Path(out_dir) / f"demo_dashboard_{split}.png"
+    plots_dir = Path(out_dir) / "plots"
+    plots_dir.mkdir(exist_ok=True)
+    demo_plot_path = plots_dir / f"demo_dashboard_{split}.png"
     plot_demo_dashboard(
         price_history=prices,
         equity_curves={"Double DQN": info.get("equity_curve", []), "Buy&Hold": bh},

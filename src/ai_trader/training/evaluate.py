@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from collections import deque
+from typing import Any, Deque, Dict, List, Optional, Tuple
 
 import numpy as np
 
@@ -47,6 +48,20 @@ def summarize_episode(info: Dict[str, Any], initial_cash: float) -> Dict[str, fl
     }
 
 
+def _nstep_return(
+    buf: List[Tuple], gamma: float
+) -> Tuple[Any, int, float, Any, bool]:
+    """Compute n-step return from a list of (s, a, r, s', done) transitions."""
+    G = 0.0
+    for i in range(len(buf) - 1, -1, -1):
+        _, _, r, _, d = buf[i]
+        G = r + gamma * G * (1.0 - float(d))
+    s, a = buf[0][0], buf[0][1]
+    s_prime = buf[-1][3]
+    any_done = any(t[4] for t in buf)
+    return s, a, G, s_prime, any_done
+
+
 def run_episode(
     env,
     agent,
@@ -61,6 +76,10 @@ def run_episode(
     done = False
     step = 0
 
+    n_steps: int = getattr(agent, "n_steps", 1)
+    gamma: float = getattr(agent, "gamma", 0.99)
+    nstep_buf: Deque[Tuple] = deque(maxlen=n_steps)
+
     for step in range(max_steps):
         action = agent.choose_action(obs, explore=train)
         next_obs, reward, terminated, truncated, info = env.step(action)
@@ -68,7 +87,9 @@ def run_episode(
         episode_reward += float(reward)
 
         if train:
-            agent.store_transition(obs, action, reward, next_obs, done)
+            nstep_buf.append((obs, action, float(reward), next_obs, done))
+            if len(nstep_buf) == n_steps:
+                agent.store_transition(*_nstep_return(list(nstep_buf), gamma))
             loss = agent.train_step()
             if loss is not None:
                 episode_losses.append(loss)
@@ -77,6 +98,12 @@ def run_episode(
         final_info = info
         if done:
             break
+
+    # Flush remaining transitions when the episode ends before the buffer fills.
+    if train and nstep_buf:
+        buf = list(nstep_buf)
+        for start in range(1, len(buf)):
+            agent.store_transition(*_nstep_return(buf[start:], gamma))
 
     # If we hit the loop cap before env termination, ask the env for full history.
     if not done and hasattr(env, "_info"):
