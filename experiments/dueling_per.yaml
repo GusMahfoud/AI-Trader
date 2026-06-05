@@ -1,0 +1,15 @@
+# Experiment: Dueling DQN + Prioritized Experience Replay + 3-step returns
+# Baseline comparison: results from a standard run with config.yaml defaults
+
+agent:
+  network: "dueling"       # V(s) + A(s,a) architecture
+  replay: "per"            # priority-weighted sampling
+  n_steps: 3               # 3-step bootstrapped returns
+
+  # PER hyperparameters (explicitly set so this file is self-contained)
+  per_alpha: 0.6           # priority exponent — higher = more aggressive prioritization
+  per_beta_start: 0.4      # IS correction start — anneals to 1.0 over per_beta_frames
+  per_beta_frames: 100000  # annealing schedule length
+
+  # Slightly reduced LR — dueling networks can be sensitive to large updates
+  learning_rate: 0.0003
