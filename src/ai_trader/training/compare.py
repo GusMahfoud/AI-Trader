@@ -60,7 +60,6 @@ def compare(
             f"sharpe={m['avg_sharpe']:.3f} drawdown={m['avg_max_drawdown']:.3%}"
         )
 
-    # Equity-curve dashboard using the first seed.
     demo_seed = seeds[0]
     demo = run_episode(env, agent, train=False, max_steps=max_steps, seed=demo_seed)
     info = demo["final_info"]
@@ -68,7 +67,9 @@ def compare(
     initial_cash = float(getattr(env, "initial_cash", 10_000.0))
     bh = buy_and_hold_curve(prices, initial_cash=initial_cash)
 
-    dashboard_path = Path(out_dir) / f"compare_dashboard_{split}.png"
+    plots_dir = Path(out_dir) / "plots"
+    plots_dir.mkdir(exist_ok=True)
+    dashboard_path = plots_dir / f"compare_dashboard_{split}.png"
     plot_demo_dashboard(
         price_history=prices,
         equity_curves={"Double DQN": info.get("equity_curve", []), "Buy&Hold": bh},
@@ -79,6 +80,7 @@ def compare(
     print(f"Saved compare chart: {dashboard_path}")
 
     metrics_path = Path(out_dir) / f"compare_metrics_{split}.csv"
+
     summary_rows = [
         {"agent": "double_dqn", **ddqn_metrics},
         {"agent": "random", **random_metrics},
@@ -89,7 +91,7 @@ def compare(
         w.writerows(summary_rows)
     print(f"Saved compare metrics: {metrics_path}")
 
-    bars_path = Path(out_dir) / f"compare_bars_{split}.png"
+    bars_path = plots_dir / f"compare_bars_{split}.png"
     plot_comparison_summary(
         metrics={"Double DQN": ddqn_metrics, "Random": random_metrics},
         output_path=bars_path,

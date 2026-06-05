@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import argparse
+import shutil
+from pathlib import Path
 from typing import List
 
 from .training import compare, deploy, train
-from .utils import ensure_dir, load_config, set_seed
+from .utils import ensure_dir, load_config, make_run_id, set_seed
 
 
 def _parse_seeds(raw: str) -> List[int]:
@@ -24,11 +26,22 @@ def main() -> None:
     parser.add_argument("--episodes", type=int, default=5, help="Episodes for deploy/compare evaluation.")
     parser.add_argument("--seeds", type=str, default="42", help="Comma-separated seeds.")
     parser.add_argument("--config", type=str, default="config.yaml", help="Path to config YAML.")
+    parser.add_argument("--override", type=str, default=None, help="Path to a YAML override file deep-merged on top of --config.")
+    parser.add_argument("--run-id", type=str, default=None, dest="run_id", help="Human-readable run name (auto-generated if omitted).")
     args = parser.parse_args()
 
-    cfg = load_config(args.config)
+    cfg = load_config(args.config, override_path=args.override)
     set_seed(int(cfg["training"]["seed"]))
-    out_dir = ensure_dir(cfg.get("output_dir", "results/double_dqn"))
+
+    run_id = make_run_id(args.run_id)
+    out_dir = ensure_dir(f"results/{run_id}")
+
+    # Snapshot the exact config used so results are always reproducible.
+    snapshot_path = Path(out_dir) / "config.yaml"
+    shutil.copy2(args.config, snapshot_path)
+
+    print(f"Run ID : {run_id}")
+    print(f"Out dir: {out_dir}")
 
     if args.mode == "train":
         train(cfg, out_dir=out_dir)
