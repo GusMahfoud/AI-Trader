@@ -20,6 +20,8 @@ env:
   max_position: 10
   allow_short: false
   trade_size: 1
+  stop_loss: null       # e.g. 0.05 = exit if portfolio drops 5% from peak (null = off)
+  take_profit: null     # e.g. 0.10 = exit if portfolio is up 10% from start  (null = off)
 
   # State + reward shaping
   lookback_window: 20
@@ -47,9 +49,10 @@ agent:
 
 training:
   seed: 42
-  episodes: 5000
+  episodes: 2500
   max_steps_per_episode: 252
   eval_every: 20
   eval_episodes: 5
+  early_stop_patience: 10   # stop if val reward hasn't improved in N eval intervals (0 = off)
 
 # output_dir is no longer used — results go to results/<run_id>/ (auto-generated at runtime)

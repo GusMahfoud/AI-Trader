@@ -1,0 +1,4 @@
+# Phase 4: stop-loss at 5% drawdown from portfolio peak
+env:
+  stop_loss: 0.05
+  take_profit: null

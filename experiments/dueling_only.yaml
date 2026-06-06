@@ -1,0 +1,5 @@
+# Isolate: dueling architecture only — all else default
+agent:
+  network: "dueling"
+  replay: "uniform"
+  n_steps: 1

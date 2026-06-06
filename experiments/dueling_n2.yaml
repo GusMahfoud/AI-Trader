@@ -1,0 +1,5 @@
+# Combine: dueling + 2-step returns
+agent:
+  network: "dueling"
+  replay: "uniform"
+  n_steps: 2
