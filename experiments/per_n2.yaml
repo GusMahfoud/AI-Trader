@@ -1,0 +1,8 @@
+# Combine: PER + 2-step returns
+agent:
+  network: "mlp"
+  replay: "per"
+  n_steps: 2
+  per_alpha: 0.6
+  per_beta_start: 0.4
+  per_beta_frames: 100000

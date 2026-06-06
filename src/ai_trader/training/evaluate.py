@@ -7,6 +7,8 @@ from typing import Any, Deque, Dict, List, Optional, Tuple
 
 import numpy as np
 
+from ai_trader.risk.metrics import avg_win_loss_ratio, calmar_ratio, sortino_ratio, var_cvar, win_rate
+
 
 def buy_and_hold_curve(price_history: List[float], initial_cash: float) -> List[float]:
     prices = np.asarray(price_history, dtype=float)
@@ -14,29 +16,30 @@ def buy_and_hold_curve(price_history: List[float], initial_cash: float) -> List[
     return list(shares * prices)
 
 
+_EMPTY_SUMMARY = {
+    "final_value": 0.0, "total_return": 0.0, "max_drawdown": 0.0,
+    "sharpe": 0.0, "sortino": 0.0, "calmar": 0.0,
+    "num_trades": 0.0, "win_rate": 0.0, "win_loss_ratio": 0.0,
+    "var_95": 0.0, "cvar_95": 0.0,
+}
+
+
 def summarize_episode(info: Dict[str, Any], initial_cash: float) -> Dict[str, float]:
     equity = np.asarray(info.get("equity_curve", []), dtype=float)
+    actions: List[int] = info.get("action_history", [])
+
     if equity.size == 0:
-        return {
-            "final_value": initial_cash,
-            "total_return": 0.0,
-            "max_drawdown": 0.0,
-            "sharpe": 0.0,
-            "num_trades": 0.0,
-        }
+        return {**_EMPTY_SUMMARY, "final_value": initial_cash}
 
     rets = equity[1:] / np.maximum(equity[:-1], 1e-8) - 1.0
     mean_ret = float(np.mean(rets)) if rets.size else 0.0
     std_ret = float(np.std(rets)) if rets.size else 0.0
-    # Annualize daily Sharpe with √252.
+    # Annualise daily Sharpe with √252.
     sharpe = (mean_ret / (std_ret + 1e-8)) * np.sqrt(252.0) if std_ret > 0 else 0.0
 
     peaks = np.maximum.accumulate(equity)
-    drawdown = (equity - peaks) / np.maximum(peaks, 1e-8)
-    max_dd = float(np.min(drawdown))
-
-    actions = info.get("action_history", [])
-    trades = float(sum(1 for a in actions if a in (1, 2)))
+    max_dd = float(np.min((equity - peaks) / np.maximum(peaks, 1e-8)))
+    var, cvar = var_cvar(equity)
 
     final_value = float(equity[-1])
     return {
@@ -44,7 +47,13 @@ def summarize_episode(info: Dict[str, Any], initial_cash: float) -> Dict[str, fl
         "total_return": (final_value / initial_cash) - 1.0,
         "max_drawdown": max_dd,
         "sharpe": float(sharpe),
-        "num_trades": trades,
+        "sortino": sortino_ratio(equity),
+        "calmar": calmar_ratio(equity),
+        "num_trades": float(sum(1 for a in actions if a in (1, 2))),
+        "win_rate": win_rate(equity, actions),
+        "win_loss_ratio": avg_win_loss_ratio(equity, actions),
+        "var_95": var,
+        "cvar_95": cvar,
     }
 
 
@@ -126,7 +135,13 @@ def _avg_summaries(summaries: List[Dict[str, float]], rewards: List[float]) -> D
         "avg_final_value": avg("final_value"),
         "avg_max_drawdown": avg("max_drawdown"),
         "avg_sharpe": avg("sharpe"),
+        "avg_sortino": avg("sortino"),
+        "avg_calmar": avg("calmar"),
         "avg_num_trades": avg("num_trades"),
+        "avg_win_rate": avg("win_rate"),
+        "avg_win_loss_ratio": avg("win_loss_ratio"),
+        "avg_var_95": avg("var_95"),
+        "avg_cvar_95": avg("cvar_95"),
     }
 
 

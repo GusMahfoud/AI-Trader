@@ -22,6 +22,7 @@ def train(cfg: Dict[str, Any], out_dir: str) -> None:
     max_steps = int(cfg["training"]["max_steps_per_episode"])
     eval_every = int(cfg["training"].get("eval_every", 50))
     eval_episodes = int(cfg["training"].get("eval_episodes", 3))
+    patience = int(cfg["training"].get("early_stop_patience", 0))
 
     train_env, val_env, _ = make_env_bundle(cfg)
     agent = build_agent(
@@ -35,13 +36,14 @@ def train(cfg: Dict[str, Any], out_dir: str) -> None:
 
     logger = DQNTrainingLogger()
     best_val_reward = -np.inf
+    no_improve_count = 0
 
     print("=== Training Start (Double DQN) ===")
     print(
         f"Observation dim: {train_env.observation_space.shape[0]}, "
         f"Action dim: {train_env.action_space.n}"
     )
-    print("Data splits: train/val/test with train-only feature normalization.")
+    print(f"Episodes: {episodes}  |  Early-stop patience: {patience or 'off'}")
 
     start_time = time.time()
     for ep in range(1, episodes + 1):
@@ -62,10 +64,12 @@ def train(cfg: Dict[str, Any], out_dir: str) -> None:
             )
             eval_reward = eval_metrics["avg_reward"]
             print(
-                f"  [Val] avg_reward={eval_metrics['avg_reward']:.5f} "
-                f"avg_return={eval_metrics['avg_total_return']:.3%} "
-                f"sharpe={eval_metrics['avg_sharpe']:.3f} "
-                f"drawdown={eval_metrics['avg_max_drawdown']:.3%}"
+                f"  [Val] reward={eval_metrics['avg_reward']:.4f} "
+                f"return={eval_metrics['avg_total_return']:.2%} "
+                f"sharpe={eval_metrics['avg_sharpe']:.2f} "
+                f"sortino={eval_metrics['avg_sortino']:.2f} "
+                f"win%={eval_metrics['avg_win_rate']:.1%} "
+                f"drawdown={eval_metrics['avg_max_drawdown']:.2%}"
             )
 
             latest_ckpt = ckpt_dir / "double_dqn_latest.pt"
@@ -76,6 +80,23 @@ def train(cfg: Dict[str, Any], out_dir: str) -> None:
                 best_path = ckpt_dir / "double_dqn_best.pt"
                 agent.save(str(best_path))
                 print(f"  New best checkpoint: {best_path}")
+                no_improve_count = 0
+            elif patience > 0:
+                no_improve_count += 1
+                if no_improve_count >= patience:
+                    print(
+                        f"  Early stop: val reward hasn't improved in "
+                        f"{patience} eval intervals ({patience * eval_every} episodes)."
+                    )
+                    logger.log_episode(
+                        episode_reward=stats["episode_reward"],
+                        episode_length=stats["episode_steps"],
+                        average_loss=stats["average_loss"],
+                        epsilon=epsilon,
+                        eval_reward=eval_reward,
+                    )
+                    logger.save(out_dir)
+                    break
 
         logger.log_episode(
             episode_reward=stats["episode_reward"],

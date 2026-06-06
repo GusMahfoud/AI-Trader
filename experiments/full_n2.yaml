@@ -1,8 +1,8 @@
-# Combine: dueling + PER, no n-step
+# Full stack: dueling + PER + 2-step returns (n3 underperformed — testing n2 instead)
 agent:
   network: "dueling"
   replay: "per"
-  n_steps: 1
+  n_steps: 2
   per_alpha: 0.6
   per_beta_start: 0.4
   per_beta_frames: 100000
