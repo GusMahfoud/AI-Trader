@@ -1,0 +1,11 @@
+# Reward Tune A — double the reward scale on the champion config.
+# Motivation: all configs show win/loss ratios barely above 1.0, suggesting the agent
+# isn't strongly incentivised to capture large moves. Doubling reward_scale amplifies
+# the signal from good decisions. One variable changed from champion_v1.
+# Run with:
+#   python -m ai_trader --mode train --run-id reward_tune_a --override experiments/reward_tune_a.yaml
+agent:
+  replay: "per"
+  n_steps: 2
+env:
+  reward_scale: 200.0

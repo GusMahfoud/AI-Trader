@@ -14,6 +14,7 @@ from ai_trader.viz import plot_comparison_summary, plot_demo_dashboard
 
 from .evaluate import (
     buy_and_hold_curve,
+    evaluate_buy_and_hold_policy,
     evaluate_policy,
     evaluate_random_policy,
     run_episode,
@@ -43,18 +44,21 @@ def compare(
 
     all_agent: List[Dict[str, float]] = []
     all_random: List[Dict[str, float]] = []
+    all_bh: List[Dict[str, float]] = []
     for seed in seeds:
         all_agent.append(evaluate_policy(env, agent, episodes=episodes, max_steps=max_steps, seed=seed))
         all_random.append(evaluate_random_policy(env, episodes=episodes, max_steps=max_steps, seed=seed))
+        all_bh.append(evaluate_buy_and_hold_policy(env, episodes=episodes, max_steps=max_steps, seed=seed))
 
     def _avg(results: List[Dict[str, float]]) -> Dict[str, float]:
         return {k: float(np.mean([r[k] for r in results])) for k in results[0].keys()}
 
     ddqn_metrics = _avg(all_agent)
     random_metrics = _avg(all_random)
+    bh_metrics = _avg(all_bh)
 
     print(f"=== Compare Summary (averaged over {len(seeds)} seed(s)) ===")
-    for name, m in [("DoubleDQN", ddqn_metrics), ("Random", random_metrics)]:
+    for name, m in [("DoubleDQN", ddqn_metrics), ("Random", random_metrics), ("BuyAndHold", bh_metrics)]:
         print(
             f"{name:10s} reward={m['avg_reward']:.5f} return={m['avg_total_return']:.3%} "
             f"sharpe={m['avg_sharpe']:.3f} drawdown={m['avg_max_drawdown']:.3%}"
@@ -84,6 +88,7 @@ def compare(
     summary_rows = [
         {"agent": "double_dqn", **ddqn_metrics},
         {"agent": "random", **random_metrics},
+        {"agent": "buy_and_hold", **bh_metrics},
     ]
     with metrics_path.open("w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=list(summary_rows[0].keys()))
@@ -93,7 +98,7 @@ def compare(
 
     bars_path = plots_dir / f"compare_bars_{split}.png"
     plot_comparison_summary(
-        metrics={"Double DQN": ddqn_metrics, "Random": random_metrics},
+        metrics={"Double DQN": ddqn_metrics, "Random": random_metrics, "Buy & Hold": bh_metrics},
         output_path=bars_path,
     )
     print(f"Saved comparison bar chart: {bars_path}")

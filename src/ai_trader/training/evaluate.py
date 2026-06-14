@@ -182,3 +182,36 @@ def evaluate_random_policy(env, episodes: int, max_steps: int, seed: int) -> Dic
         summaries.append(summarize_episode(final_info, initial_cash=initial_cash))
 
     return _avg_summaries(summaries, rewards)
+
+
+def evaluate_buy_and_hold_policy(env, episodes: int, max_steps: int, seed: int) -> Dict[str, Any]:
+    """Buy one share at episode start, hold for the rest — cost-inclusive B&H benchmark.
+
+    Uses the same env constraints (trade_size, slippage, transaction_cost) as the DQN agent
+    so the comparison is apples-to-apples within the simulation.
+    """
+    initial_cash = float(getattr(env, "initial_cash", 10_000.0))
+    rewards: List[float] = []
+    summaries: List[Dict[str, float]] = []
+
+    for ep in range(episodes):
+        obs, info = env.reset(seed=seed + ep)
+        total_reward = 0.0
+        final_info = info
+        done = False
+        bought = False
+        for _ in range(max_steps):
+            action = 2 if not bought else 0  # buy once, then hold forever
+            bought = True
+            obs, reward, terminated, truncated, info = env.step(action)
+            total_reward += float(reward)
+            final_info = info
+            done = terminated or truncated
+            if done:
+                break
+        if not done and hasattr(env, "_info"):
+            final_info = env._info(action_masked=False, full=True)
+        rewards.append(total_reward)
+        summaries.append(summarize_episode(final_info, initial_cash=initial_cash))
+
+    return _avg_summaries(summaries, rewards)
