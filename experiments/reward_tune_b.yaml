@@ -1,0 +1,12 @@
+# Reward Tune B — double the inactivity penalty on the champion config.
+# Motivation: the inactivity_penalty prevents all-hold collapse but may be too weak
+# to push the agent toward capturing multi-day trends. A stronger hold penalty should
+# increase trade frequency and force the agent to commit to positions. One variable
+# changed from champion_v1.
+# Run with:
+#   python -m ai_trader --mode train --run-id reward_tune_b --override experiments/reward_tune_b.yaml
+agent:
+  replay: "per"
+  n_steps: 2
+env:
+  inactivity_penalty: 0.01

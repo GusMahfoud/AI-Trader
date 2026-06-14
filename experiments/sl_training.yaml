@@ -1,0 +1,11 @@
+# SL Training — PER+N2 champion trained with stop-loss active from episode 1.
+# Agents trained with SL off and then evaluated with SL on perform catastrophically
+# (eval_sl scored 0.46 vs baseline 2.90). Training with SL active lets the agent
+# learn to work around forced exits rather than being surprised by them.
+# Run with:
+#   python -m ai_trader --mode train --run-id sl_training --override experiments/sl_training.yaml
+agent:
+  replay: "per"
+  n_steps: 2
+env:
+  stop_loss: 0.05

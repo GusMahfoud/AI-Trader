@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
 from ai_trader.training.evaluate import (
     buy_and_hold_curve,
+    evaluate_buy_and_hold_policy,
     evaluate_random_policy,
     summarize_episode,
 )
@@ -77,3 +79,27 @@ def test_random_policy_returns_expected_keys(synthetic_config):
         "avg_num_trades",
     ):
         assert key in metrics
+
+
+def test_buy_and_hold_policy_returns_expected_keys(synthetic_config):
+    _, _, test_env = make_env_bundle(synthetic_config)
+    metrics = evaluate_buy_and_hold_policy(test_env, episodes=1, max_steps=20, seed=42)
+    for key in (
+        "avg_reward",
+        "std_reward",
+        "avg_total_return",
+        "avg_final_value",
+        "avg_max_drawdown",
+        "avg_sharpe",
+        "avg_num_trades",
+    ):
+        assert key in metrics
+    test_env.close()
+
+
+def test_buy_and_hold_makes_exactly_one_trade(synthetic_config):
+    _, _, test_env = make_env_bundle(synthetic_config)
+    metrics = evaluate_buy_and_hold_policy(test_env, episodes=1, max_steps=20, seed=42)
+    # B&H buys once and holds — exactly 1 trade.
+    assert metrics["avg_num_trades"] == pytest.approx(1.0, abs=0.01)
+    test_env.close()

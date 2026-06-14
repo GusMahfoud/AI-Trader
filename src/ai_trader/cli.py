@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import argparse
-import shutil
 from pathlib import Path
 from typing import List
+
+import yaml
 
 from .training import compare, deploy, train
 from .utils import ensure_dir, load_config, make_run_id, set_seed
@@ -36,9 +37,11 @@ def main() -> None:
     run_id = make_run_id(args.run_id)
     out_dir = ensure_dir(f"results/{run_id}")
 
-    # Snapshot the exact config used so results are always reproducible.
+    # Snapshot the fully-merged config (base + overrides) so the run dir
+    # is self-contained and can be used directly with --config later.
     snapshot_path = Path(out_dir) / "config.yaml"
-    shutil.copy2(args.config, snapshot_path)
+    with snapshot_path.open("w", encoding="utf-8") as f:
+        yaml.dump(cfg, f, default_flow_style=False, sort_keys=False)
 
     print(f"Run ID : {run_id}")
     print(f"Out dir: {out_dir}")
