@@ -2,6 +2,11 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Git Rules (non-negotiable)
+
+- **NEVER commit without explicit user confirmation.** Always show what would be
+  committed and ask first. No exceptions, no "momentum" commits.
+
 ## Code Quality Rules
 
 These rules apply to every file in this repo. They are non-negotiable.
