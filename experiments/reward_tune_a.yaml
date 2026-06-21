@@ -1,10 +1,11 @@
-# Reward Tune A — double the reward scale on the champion config.
-# Motivation: all configs show win/loss ratios barely above 1.0, suggesting the agent
-# isn't strongly incentivised to capture large moves. Doubling reward_scale amplifies
-# the signal from good decisions. One variable changed from champion_v1.
+# Reward Tune A (dueling base) — double the reward scale.
+# Re-baselined on the dueling champion (the old MLP-base run was pre-methodology-fix).
+# Hypothesis: amplifying the per-step return signal pushes the agent to capture larger moves,
+# lifting the win/loss ratio. One variable changed from dueling_per_n2.
 # Run with:
-#   python -m ai_trader --mode train --run-id reward_tune_a --override experiments/reward_tune_a.yaml
+#   python -m ai_trader --mode train --run-id reward_tune_a_v3 --override experiments/reward_tune_a.yaml
 agent:
+  network: "dueling"
   replay: "per"
   n_steps: 2
 env:

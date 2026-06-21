@@ -8,7 +8,8 @@ from .evaluate import (
     summarize_episode,
 )
 from .logger import DQNTrainingLogger
-from .train import train
+from .train import train, train_on_envs
+from .walk_forward import walk_forward
 
 __all__ = [
     "DQNTrainingLogger",
@@ -20,4 +21,6 @@ __all__ = [
     "run_episode",
     "summarize_episode",
     "train",
+    "train_on_envs",
+    "walk_forward",
 ]

@@ -8,7 +8,7 @@ from typing import List
 
 import yaml
 
-from .training import compare, deploy, train
+from .training import compare, deploy, train, walk_forward
 from .utils import ensure_dir, load_config, make_run_id, set_seed
 
 
@@ -21,7 +21,7 @@ def _parse_seeds(raw: str) -> List[int]:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Train/deploy/compare the Double DQN trading agent.")
-    parser.add_argument("--mode", choices=["train", "deploy", "compare"], default="train")
+    parser.add_argument("--mode", choices=["train", "deploy", "compare", "walk_forward"], default="train")
     parser.add_argument("--checkpoint", type=str, default=None, help="Checkpoint path for deploy/compare.")
     parser.add_argument("--split", choices=["train", "val", "test"], default="test")
     parser.add_argument("--episodes", type=int, default=5, help="Episodes for deploy/compare evaluation.")
@@ -29,9 +29,12 @@ def main() -> None:
     parser.add_argument("--config", type=str, default="config.yaml", help="Path to config YAML.")
     parser.add_argument("--override", type=str, default=None, help="Path to a YAML override file deep-merged on top of --config.")
     parser.add_argument("--run-id", type=str, default=None, dest="run_id", help="Human-readable run name (auto-generated if omitted).")
+    parser.add_argument("--refresh-data", action="store_true", dest="refresh_data", help="Bypass the on-disk data cache and re-download.")
     args = parser.parse_args()
 
     cfg = load_config(args.config, override_path=args.override)
+    if args.refresh_data:
+        cfg.setdefault("env", {})["refresh_data"] = True
     set_seed(int(cfg["training"]["seed"]))
 
     run_id = make_run_id(args.run_id)
@@ -48,6 +51,10 @@ def main() -> None:
 
     if args.mode == "train":
         train(cfg, out_dir=out_dir)
+        return
+
+    if args.mode == "walk_forward":
+        walk_forward(cfg, out_dir=out_dir)
         return
 
     if args.mode == "deploy":

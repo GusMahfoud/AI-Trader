@@ -2,6 +2,7 @@ torch
 gymnasium
 numpy
 pandas
+pyarrow
 matplotlib
 PyYAML
 yfinance

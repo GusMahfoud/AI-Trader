@@ -1,11 +1,11 @@
-# Reward Tune B — double the inactivity penalty on the champion config.
-# Motivation: the inactivity_penalty prevents all-hold collapse but may be too weak
-# to push the agent toward capturing multi-day trends. A stronger hold penalty should
-# increase trade frequency and force the agent to commit to positions. One variable
-# changed from champion_v1.
+# Reward Tune B (dueling base) — double the inactivity penalty.
+# Re-baselined on the dueling champion. The champion is very selective (~24 trades); a stronger
+# hold penalty tests whether more activity helps or hurts risk-adjusted return.
+# One variable changed from dueling_per_n2.
 # Run with:
-#   python -m ai_trader --mode train --run-id reward_tune_b --override experiments/reward_tune_b.yaml
+#   python -m ai_trader --mode train --run-id reward_tune_b_v3 --override experiments/reward_tune_b.yaml
 agent:
+  network: "dueling"
   replay: "per"
   n_steps: 2
 env:

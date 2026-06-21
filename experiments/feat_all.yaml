@@ -1,0 +1,10 @@
+# Feature ablation — add all three regime features to the dueling champion.
+# Upper bound on what the expanded feature set can contribute together.
+# Run with:
+#   python -m ai_trader --mode train --run-id feat_all_v3 --override experiments/feat_all.yaml
+agent:
+  network: "dueling"
+  replay: "per"
+  n_steps: 2
+env:
+  extra_features: ["volume_regime", "vol_regime", "price_position"]
