@@ -1,0 +1,5 @@
+# Isolate: 2-step returns only — all else default
+agent:
+  network: "mlp"
+  replay: "uniform"
+  n_steps: 2

@@ -1,0 +1,9 @@
+# Combine: dueling + PER, no n-step
+agent:
+  network: "dueling"
+  replay: "per"
+  n_steps: 1
+  per_alpha: 0.6
+  per_beta_start: 0.4
+  per_beta_frames: 100000
+  learning_rate: 0.0003

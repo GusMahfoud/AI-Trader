@@ -1,0 +1,9 @@
+# N-step sensitivity — dueling + PER with N-step=4 (≈ one trading week horizon).
+# N-step=2 was best across v1; this checks whether a weekly horizon captures more trend.
+# One variable changed from dueling_per_n2.
+# Run with:
+#   python -m ai_trader --mode train --run-id dueling_per_n4_v3 --override experiments/dueling_per_n4.yaml
+agent:
+  network: "dueling"
+  replay: "per"
+  n_steps: 4

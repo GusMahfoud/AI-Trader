@@ -1,0 +1,10 @@
+# Dueling + PER + N-step=2 — all three combined with proper early stopping.
+# The previous dueling_per_n3_gus run used N-step=3 and ran without early stopping,
+# making it hard to isolate the cause of underperformance. This run uses the same
+# N-step=2 and early_stop_patience as champion_v1 so the only variable is the network.
+# Run with:
+#   python -m ai_trader --mode train --run-id dueling_per_n2 --override experiments/dueling_per_n2.yaml
+agent:
+  network: "dueling"
+  replay: "per"
+  n_steps: 2

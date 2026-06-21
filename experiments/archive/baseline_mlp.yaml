@@ -1,0 +1,6 @@
+# Control: standard MLP + uniform replay + 1-step TD
+# Use this as the clean reference for all Phase 3/4 comparisons.
+agent:
+  network: "mlp"
+  replay: "uniform"
+  n_steps: 1
