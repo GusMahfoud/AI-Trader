@@ -7,6 +7,7 @@ from typing import Any, Dict
 import numpy as np
 import pandas as pd
 
+from .cache import cache_path, read_cache, write_cache
 
 REQUIRED_OHLCV = ["open", "high", "low", "close", "volume"]
 
@@ -30,6 +31,13 @@ def _generate_synthetic_data(length: int, seed: int) -> pd.DataFrame:
 
 def _load_market_data(env_cfg: Dict[str, Any], seed: int) -> pd.DataFrame:
     source = str(env_cfg.get("data_source", "synthetic")).lower()
+
+    # yfinance is the only network source — serve a cleaned cache when available.
+    cpath = cache_path(env_cfg) if source == "yfinance" else None
+    if cpath is not None and not bool(env_cfg.get("refresh_data", False)):
+        cached = read_cache(cpath)
+        if cached is not None:
+            return cached
 
     if source == "csv":
         data_path = env_cfg.get("data_path")
@@ -80,5 +88,8 @@ def _load_market_data(env_cfg: Dict[str, Any], seed: int) -> pd.DataFrame:
 
     if len(frame) < 200:
         raise ValueError("Market data too short. Provide at least 200 rows.")
+
+    if cpath is not None:
+        write_cache(cpath, frame)
 
     return frame

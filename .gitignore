@@ -20,3 +20,10 @@ venv/
 # Scratch/archive directories
 runs/
 archived_results/
+
+# Per-run results (large files) and local experiment overrides
+results/
+
+Improvement_plan.md
+
+data/

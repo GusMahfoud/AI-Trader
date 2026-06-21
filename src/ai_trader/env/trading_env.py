@@ -58,6 +58,11 @@ class TradingEnv(gym.Env):
         self.random_start = bool(self._cfg.get("random_start", split == "train"))
         self._hold_streak: int = 0
 
+        raw_sl = self._cfg.get("stop_loss", None)
+        raw_tp = self._cfg.get("take_profit", None)
+        self.stop_loss: Optional[float] = float(raw_sl) if raw_sl is not None else None
+        self.take_profit: Optional[float] = float(raw_tp) if raw_tp is not None else None
+
         self._min_position = -self.max_position if self.allow_short else 0
         self._episode_steps_cap = int(config.get("training", {}).get("max_steps_per_episode", 252))
 
@@ -209,10 +214,24 @@ class TradingEnv(gym.Env):
             )
         return info
 
+    def _forced_exit_action(self, action: int, price: float) -> int:
+        """Override action to sell if stop-loss or take-profit thresholds are hit."""
+        if self._position <= 0:
+            return action
+        current_value = self._cash + self._position * price
+        drawdown = (self._peak_value - current_value) / (self._peak_value + 1e-8)
+        gain = (current_value - self.initial_cash) / (self.initial_cash + 1e-8)
+        if self.stop_loss is not None and drawdown >= self.stop_loss:
+            return 1
+        if self.take_profit is not None and gain >= self.take_profit:
+            return 1
+        return action
+
     def step(self, action: int) -> Tuple[np.ndarray, float, bool, bool, Dict[str, Any]]:
         current_price = self._price_at(self._cursor)
         prev_value = self._cash + self._position * current_price
 
+        action = self._forced_exit_action(action, current_price)
         action, masked, trade_units = self._apply_action(action=action, price=current_price)
         self._action_history.append(int(action))
 

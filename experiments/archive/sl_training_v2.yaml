@@ -1,0 +1,11 @@
+# SL Training V2 — PER+N2 with stop_loss: 0.03 (softer than v1's 0.05).
+# V1 showed a promising win/loss ratio (1.494) but only 42.9% win rate — the 5%
+# threshold was too tight for AAPL's daily vol, forcing exits on normal retracements.
+# 3% is still protective but gives positions more room to breathe.
+# Run with:
+#   python -m ai_trader --mode train --run-id sl_training_v2 --override experiments/sl_training_v2.yaml
+agent:
+  replay: "per"
+  n_steps: 2
+env:
+  stop_loss: 0.03

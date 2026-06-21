@@ -1,0 +1,12 @@
+# Reward Tune C (dueling base) — double the drawdown (risk) penalty.
+# Most relevant lever for the champion's weak spot: W/L ratio 0.82 (occasional larger losses).
+# A stronger drawdown penalty should discourage the trades that turn into big losers.
+# One variable changed from dueling_per_n2.
+# Run with:
+#   python -m ai_trader --mode train --run-id reward_tune_c_v3 --override experiments/reward_tune_c.yaml
+agent:
+  network: "dueling"
+  replay: "per"
+  n_steps: 2
+env:
+  risk_penalty: 0.002

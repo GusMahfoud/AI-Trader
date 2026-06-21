@@ -1,0 +1,4 @@
+# Phase 4: stop-loss 5% + take-profit 10% combined
+env:
+  stop_loss: 0.05
+  take_profit: 0.10

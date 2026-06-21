@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from collections import deque
+from typing import Any, Deque, Dict, List, Optional, Tuple
 
 import numpy as np
+
+from ai_trader.risk.metrics import avg_win_loss_ratio, calmar_ratio, sortino_ratio, var_cvar, win_rate
 
 
 def buy_and_hold_curve(price_history: List[float], initial_cash: float) -> List[float]:
@@ -13,29 +16,30 @@ def buy_and_hold_curve(price_history: List[float], initial_cash: float) -> List[
     return list(shares * prices)
 
 
+_EMPTY_SUMMARY = {
+    "final_value": 0.0, "total_return": 0.0, "max_drawdown": 0.0,
+    "sharpe": 0.0, "sortino": 0.0, "calmar": 0.0,
+    "num_trades": 0.0, "win_rate": 0.0, "win_loss_ratio": 0.0,
+    "var_95": 0.0, "cvar_95": 0.0,
+}
+
+
 def summarize_episode(info: Dict[str, Any], initial_cash: float) -> Dict[str, float]:
     equity = np.asarray(info.get("equity_curve", []), dtype=float)
+    actions: List[int] = info.get("action_history", [])
+
     if equity.size == 0:
-        return {
-            "final_value": initial_cash,
-            "total_return": 0.0,
-            "max_drawdown": 0.0,
-            "sharpe": 0.0,
-            "num_trades": 0.0,
-        }
+        return {**_EMPTY_SUMMARY, "final_value": initial_cash}
 
     rets = equity[1:] / np.maximum(equity[:-1], 1e-8) - 1.0
     mean_ret = float(np.mean(rets)) if rets.size else 0.0
     std_ret = float(np.std(rets)) if rets.size else 0.0
-    # Annualize daily Sharpe with √252.
+    # Annualise daily Sharpe with √252.
     sharpe = (mean_ret / (std_ret + 1e-8)) * np.sqrt(252.0) if std_ret > 0 else 0.0
 
     peaks = np.maximum.accumulate(equity)
-    drawdown = (equity - peaks) / np.maximum(peaks, 1e-8)
-    max_dd = float(np.min(drawdown))
-
-    actions = info.get("action_history", [])
-    trades = float(sum(1 for a in actions if a in (1, 2)))
+    max_dd = float(np.min((equity - peaks) / np.maximum(peaks, 1e-8)))
+    var, cvar = var_cvar(equity)
 
     final_value = float(equity[-1])
     return {
@@ -43,8 +47,28 @@ def summarize_episode(info: Dict[str, Any], initial_cash: float) -> Dict[str, fl
         "total_return": (final_value / initial_cash) - 1.0,
         "max_drawdown": max_dd,
         "sharpe": float(sharpe),
-        "num_trades": trades,
+        "sortino": sortino_ratio(equity),
+        "calmar": calmar_ratio(equity),
+        "num_trades": float(sum(1 for a in actions if a in (1, 2))),
+        "win_rate": win_rate(equity, actions),
+        "win_loss_ratio": avg_win_loss_ratio(equity, actions),
+        "var_95": var,
+        "cvar_95": cvar,
     }
+
+
+def _nstep_return(
+    buf: List[Tuple], gamma: float
+) -> Tuple[Any, int, float, Any, bool]:
+    """Compute n-step return from a list of (s, a, r, s', done) transitions."""
+    G = 0.0
+    for i in range(len(buf) - 1, -1, -1):
+        _, _, r, _, d = buf[i]
+        G = r + gamma * G * (1.0 - float(d))
+    s, a = buf[0][0], buf[0][1]
+    s_prime = buf[-1][3]
+    any_done = any(t[4] for t in buf)
+    return s, a, G, s_prime, any_done
 
 
 def run_episode(
@@ -61,6 +85,10 @@ def run_episode(
     done = False
     step = 0
 
+    n_steps: int = getattr(agent, "n_steps", 1)
+    gamma: float = getattr(agent, "gamma", 0.99)
+    nstep_buf: Deque[Tuple] = deque(maxlen=n_steps)
+
     for step in range(max_steps):
         action = agent.choose_action(obs, explore=train)
         next_obs, reward, terminated, truncated, info = env.step(action)
@@ -68,7 +96,9 @@ def run_episode(
         episode_reward += float(reward)
 
         if train:
-            agent.store_transition(obs, action, reward, next_obs, done)
+            nstep_buf.append((obs, action, float(reward), next_obs, done))
+            if len(nstep_buf) == n_steps:
+                agent.store_transition(*_nstep_return(list(nstep_buf), gamma))
             loss = agent.train_step()
             if loss is not None:
                 episode_losses.append(loss)
@@ -77,6 +107,12 @@ def run_episode(
         final_info = info
         if done:
             break
+
+    # Flush remaining transitions when the episode ends before the buffer fills.
+    if train and nstep_buf:
+        buf = list(nstep_buf)
+        for start in range(1, len(buf)):
+            agent.store_transition(*_nstep_return(buf[start:], gamma))
 
     # If we hit the loop cap before env termination, ask the env for full history.
     if not done and hasattr(env, "_info"):
@@ -99,7 +135,13 @@ def _avg_summaries(summaries: List[Dict[str, float]], rewards: List[float]) -> D
         "avg_final_value": avg("final_value"),
         "avg_max_drawdown": avg("max_drawdown"),
         "avg_sharpe": avg("sharpe"),
+        "avg_sortino": avg("sortino"),
+        "avg_calmar": avg("calmar"),
         "avg_num_trades": avg("num_trades"),
+        "avg_win_rate": avg("win_rate"),
+        "avg_win_loss_ratio": avg("win_loss_ratio"),
+        "avg_var_95": avg("var_95"),
+        "avg_cvar_95": avg("cvar_95"),
     }
 
 
@@ -128,6 +170,39 @@ def evaluate_random_policy(env, episodes: int, max_steps: int, seed: int) -> Dic
         done = False
         for _ in range(max_steps):
             action = int(env.action_space.sample())
+            obs, reward, terminated, truncated, info = env.step(action)
+            total_reward += float(reward)
+            final_info = info
+            done = terminated or truncated
+            if done:
+                break
+        if not done and hasattr(env, "_info"):
+            final_info = env._info(action_masked=False, full=True)
+        rewards.append(total_reward)
+        summaries.append(summarize_episode(final_info, initial_cash=initial_cash))
+
+    return _avg_summaries(summaries, rewards)
+
+
+def evaluate_buy_and_hold_policy(env, episodes: int, max_steps: int, seed: int) -> Dict[str, Any]:
+    """Buy one share at episode start, hold for the rest — cost-inclusive B&H benchmark.
+
+    Uses the same env constraints (trade_size, slippage, transaction_cost) as the DQN agent
+    so the comparison is apples-to-apples within the simulation.
+    """
+    initial_cash = float(getattr(env, "initial_cash", 10_000.0))
+    rewards: List[float] = []
+    summaries: List[Dict[str, float]] = []
+
+    for ep in range(episodes):
+        obs, info = env.reset(seed=seed + ep)
+        total_reward = 0.0
+        final_info = info
+        done = False
+        bought = False
+        for _ in range(max_steps):
+            action = 2 if not bought else 0  # buy once, then hold forever
+            bought = True
             obs, reward, terminated, truncated, info = env.step(action)
             total_reward += float(reward)
             final_info = info

@@ -13,6 +13,10 @@ env:
   train_ratio: 0.70
   val_ratio: 0.15
 
+  # Optional regime features for ablation: any of
+  # [volume_regime, vol_regime, price_position]. Empty = base 11 features only.
+  extra_features: []
+
   # Trading dynamics
   initial_cash: 10000
   transaction_cost: 0.0003
@@ -20,6 +24,8 @@ env:
   max_position: 10
   allow_short: false
   trade_size: 1
+  stop_loss: null # e.g. 0.05 = exit if portfolio drops 5% from peak (null = off)
+  take_profit: null # e.g. 0.10 = exit if portfolio is up 10% from start  (null = off)
 
   # State + reward shaping
   lookback_window: 20
@@ -38,12 +44,22 @@ agent:
   epsilon_min: 0.05
   epsilon_decay: 0.995
   tau: 0.001
+  network: "mlp" # "mlp" | "dueling"
+  replay: "uniform" # "uniform" | "per"
+  n_steps: 1 # N-step returns (1 = standard TD)
+  per_alpha: 0.6 # PER priority exponent
+  per_beta_start: 0.4 # IS weight start (anneals to 1.0)
+  per_beta_frames: 100000
 
 training:
   seed: 42
-  episodes: 5000
+  episodes: 2500
   max_steps_per_episode: 252
   eval_every: 20
-  eval_episodes: 5
+  eval_episodes: 10
+  early_stop_patience: 25 # stop if val Sharpe hasn't improved in N eval intervals (0 = off)
+  early_stop_warmup: 300 # don't start patience counter until after this many episodes
+  n_splits: 4 # number of rolling folds for --mode walk_forward
 
-output_dir: "results/double_dqn"
+
+# output_dir is no longer used — results go to results/<run_id>/ (auto-generated at runtime)

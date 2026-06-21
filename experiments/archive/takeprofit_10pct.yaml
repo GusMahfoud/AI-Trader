@@ -1,0 +1,4 @@
+# Phase 4: take-profit at 10% portfolio gain from initial cash
+env:
+  stop_loss: null
+  take_profit: 0.10

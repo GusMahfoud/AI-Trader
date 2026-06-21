@@ -1,0 +1,8 @@
+# Isolate: PER buffer only — all else default
+agent:
+  network: "mlp"
+  replay: "per"
+  n_steps: 1
+  per_alpha: 0.6
+  per_beta_start: 0.4
+  per_beta_frames: 100000
