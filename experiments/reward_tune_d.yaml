@@ -1,0 +1,11 @@
+# Reward Tune D (dueling base) — remove the position-size penalty.
+# Tests whether letting the agent hold larger positions (up to max_position) improves capture
+# without the inventory tax. One variable changed from dueling_per_n2.
+# Run with:
+#   python -m ai_trader --mode train --run-id reward_tune_d_v3 --override experiments/reward_tune_d.yaml
+agent:
+  network: "dueling"
+  replay: "per"
+  n_steps: 2
+env:
+  position_penalty: 0.0

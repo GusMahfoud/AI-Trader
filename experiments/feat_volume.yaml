@@ -1,0 +1,10 @@
+# Feature ablation — add volume_regime (volume vs 20-day avg) to the dueling champion.
+# One feature added from dueling_per_n2.
+# Run with:
+#   python -m ai_trader --mode train --run-id feat_volume_v3 --override experiments/feat_volume.yaml
+agent:
+  network: "dueling"
+  replay: "per"
+  n_steps: 2
+env:
+  extra_features: ["volume_regime"]
