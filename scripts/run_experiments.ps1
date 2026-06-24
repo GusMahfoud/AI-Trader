@@ -15,7 +15,7 @@
     ./scripts/run_experiments.ps1 -Tier 4 -Winners dueling_per_n2,reward_tune_c
 #>
 param(
-    [ValidateSet("0", "1", "2", "3", "all")]
+    [ValidateSet("0", "1", "2", "3", "4", "all")]
     [string]$Tier = "all",
 
     [string]$CondaEnv = "ai-trader",
@@ -41,9 +41,12 @@ function Start-Train {
 }
 
 function Start-Compare {
-    param([string]$EvalId, [string]$TrainRunId)
+    param([string]$EvalId, [string]$TrainRunId, [string]$Yaml)
+    # Must pass the same --override as training so compare builds the matching
+    # network + feature set; otherwise the checkpoint fails to load (state_dict mismatch).
     $ckpt = "results/$TrainRunId/checkpoints/double_dqn_best.pt"
     Invoke-AiTrader @("--mode", "compare", "--checkpoint", $ckpt, "--run-id", $EvalId,
+        "--override", "experiments/$Yaml",
         "--split", "test", "--episodes", "$Episodes", "--seeds", $Seeds)
 }
 
@@ -65,16 +68,17 @@ $Tier2 = @(
     @("feat_priceposition_v3", "feat_priceposition.yaml", "eval_feat_priceposition_v3"),
     @("feat_all_v3", "feat_all.yaml", "eval_feat_all_v3")
 )
-$Tier3 = @(
-    @("dueling_per_n4_v3", "dueling_per_n4.yaml", "eval_n4_v3")
-)
+# Leading comma forces a single-element array-of-array; @( @(...) ) would collapse
+# into a flat string array and the loop would index into characters.
+$Tier3 = , @("dueling_per_n4_v3", "dueling_per_n4.yaml", "eval_n4_v3")
 
 function Invoke-TrainCompareTier {
     param([string]$Name, [array]$Specs)
     Write-Host "`n=== $Name ===" -ForegroundColor Yellow
     foreach ($s in $Specs) {
+        if ($s -isnot [array]) { throw "Tier spec is not an array (PowerShell array collapse?): $s" }
         Start-Train   -RunId $s[0] -Yaml $s[1]
-        Start-Compare -EvalId $s[2] -TrainRunId $s[0]
+        Start-Compare -EvalId $s[2] -TrainRunId $s[0] -Yaml $s[1]
     }
 }
 
@@ -89,10 +93,16 @@ if ($Tier -in @("1", "all")) { Invoke-TrainCompareTier -Name "TIER 1: Reward sha
 if ($Tier -in @("2", "all")) { Invoke-TrainCompareTier -Name "TIER 2: Feature ablations" -Specs $Tier2 }
 if ($Tier -in @("3", "all")) { Invoke-TrainCompareTier -Name "TIER 3: N-step sensitivity" -Specs $Tier3 }
 
-# Tier 4 is opt-in: pass the winning config stems via -Winners (no .yaml suffix).
-if ($Winners.Count -gt 0) {
-    Write-Host "`n=== TIER 4: Walk-forward confirmation of winners ===" -ForegroundColor Yellow
-    foreach ($w in $Winners) { Start-WalkForward -RunId "wf_${w}_v3" -Yaml "$w.yaml" }
+# Tier 4 is opt-in: select it with -Tier 4 (or -Tier all) and pass the winning
+# config stems via -Winners (no .yaml suffix).
+if ($Tier -in @("4", "all")) {
+    if ($Winners.Count -gt 0) {
+        Write-Host "`n=== TIER 4: Walk-forward confirmation of winners ===" -ForegroundColor Yellow
+        foreach ($w in $Winners) { Start-WalkForward -RunId "wf_${w}_v3" -Yaml "$w.yaml" }
+    }
+    elseif ($Tier -eq "4") {
+        Write-Host "Tier 4 selected but no -Winners passed; nothing to confirm." -ForegroundColor Yellow
+    }
 }
 
 Write-Host "`nDone. Metrics: results/<eval-id>/compare_metrics_test.csv and results/wf_*/walk_forward_test.csv" -ForegroundColor Green
