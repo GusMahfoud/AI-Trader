@@ -10,6 +10,7 @@ import numpy as np
 
 from ai_trader.agents import build_agent
 from ai_trader.env import make_env_bundle
+from ai_trader.utils import get_logger
 from ai_trader.viz import plot_comparison_summary, plot_demo_dashboard
 
 from .evaluate import (
@@ -19,6 +20,8 @@ from .evaluate import (
     evaluate_random_policy,
     run_episode,
 )
+
+logger = get_logger(__name__)
 
 
 def compare(
@@ -40,7 +43,7 @@ def compare(
         action_dim=int(env.action_space.n),
     )
     agent.load(checkpoint_path)
-    print(f"Loaded checkpoint: {checkpoint_path}")
+    logger.info(f"Loaded checkpoint: {checkpoint_path}")
 
     all_agent: List[Dict[str, float]] = []
     all_random: List[Dict[str, float]] = []
@@ -57,9 +60,9 @@ def compare(
     random_metrics = _avg(all_random)
     bh_metrics = _avg(all_bh)
 
-    print(f"=== Compare Summary (averaged over {len(seeds)} seed(s)) ===")
+    logger.info(f"=== Compare Summary (averaged over {len(seeds)} seed(s)) ===")
     for name, m in [("DoubleDQN", ddqn_metrics), ("Random", random_metrics), ("BuyAndHold", bh_metrics)]:
-        print(
+        logger.info(
             f"{name:10s} reward={m['avg_reward']:.5f} return={m['avg_total_return']:.3%} "
             f"sharpe={m['avg_sharpe']:.3f} drawdown={m['avg_max_drawdown']:.3%}"
         )
@@ -81,7 +84,7 @@ def compare(
         output_path=dashboard_path,
         title=f"Double DQN vs Buy&Hold ({split})",
     )
-    print(f"Saved compare chart: {dashboard_path}")
+    logger.info(f"Saved compare chart: {dashboard_path}")
 
     metrics_path = Path(out_dir) / f"compare_metrics_{split}.csv"
 
@@ -94,14 +97,14 @@ def compare(
         w = csv.DictWriter(f, fieldnames=list(summary_rows[0].keys()))
         w.writeheader()
         w.writerows(summary_rows)
-    print(f"Saved compare metrics: {metrics_path}")
+    logger.info(f"Saved compare metrics: {metrics_path}")
 
     bars_path = plots_dir / f"compare_bars_{split}.png"
     plot_comparison_summary(
         metrics={"Double DQN": ddqn_metrics, "Random": random_metrics, "Buy & Hold": bh_metrics},
         output_path=bars_path,
     )
-    print(f"Saved comparison bar chart: {bars_path}")
+    logger.info(f"Saved comparison bar chart: {bars_path}")
 
     train_env.close()
     val_env.close()

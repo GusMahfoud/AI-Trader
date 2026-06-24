@@ -95,6 +95,49 @@ def test_chronological_split_bounds_are_disjoint(synthetic_config):
     assert train_lo < train_hi < val_hi < test_hi
 
 
+def _fraction_cfg(synthetic_config, **overrides):
+    cfg = dict(synthetic_config)
+    cfg["env"] = {
+        **cfg["env"],
+        "position_sizing": "fraction",
+        "trade_fraction": 0.25,
+        "max_exposure": 1.0,
+        **overrides,
+    }
+    return cfg
+
+
+def test_fraction_mode_deploys_real_capital(synthetic_config):
+    """Fraction sizing should invest most of equity — the old shares cap left ~80% idle."""
+    env = make_env(_fraction_cfg(synthetic_config), split="train")
+    env.reset(seed=42)
+    for _ in range(8):
+        env.step(2)  # buy
+    price = env._price_at(env._cursor)
+    exposure = env._position * price / env._portfolio_value
+    assert exposure > 0.5
+
+
+def test_fraction_mode_respects_max_exposure(synthetic_config):
+    env = make_env(_fraction_cfg(synthetic_config, trade_fraction=0.5, max_exposure=0.5), split="train")
+    env.reset(seed=42)
+    for _ in range(12):
+        env.step(2)  # keep buying — must not exceed the exposure cap
+    price = env._price_at(env._cursor)
+    exposure = env._position * price / env._portfolio_value
+    assert exposure <= 0.6  # ~0.5 cap plus rounding/price drift
+
+
+def test_fraction_mode_pos_frac_stays_bounded(synthetic_config):
+    env = make_env(_fraction_cfg(synthetic_config), split="train")
+    env.reset(seed=42)
+    for _ in range(8):
+        obs, *_ = env.step(2)
+    # State layout: [...market features..., pos_frac, cash_frac, exposure, unrealized].
+    pos_frac = float(obs[-4])
+    assert -1.5 <= pos_frac <= 1.5
+
+
 @pytest.mark.parametrize("seed", [0, 7, 99])
 def test_reset_is_seed_deterministic(synthetic_config, seed):
     cfg = dict(synthetic_config)

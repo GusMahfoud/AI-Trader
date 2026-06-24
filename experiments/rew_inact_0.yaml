@@ -1,0 +1,5 @@
+# Tier 2 (reward) — remove the inactivity penalty (champion uses 0.005).
+# With real capital at work, forcing activity may matter less; test removing the nudge.
+# One variable changed from the champion base.
+env:
+  inactivity_penalty: 0.0

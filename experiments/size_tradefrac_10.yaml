@@ -1,0 +1,5 @@
+# Tier 1 (sizing) — smaller per-trade step: 10% of equity (champion uses 25%).
+# Slower ramp into positions; tests sensitivity to trade granularity.
+# One variable changed from the champion base.
+env:
+  trade_fraction: 0.10

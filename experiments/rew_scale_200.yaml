@@ -1,0 +1,5 @@
+# Tier 2 (reward) — double the return amplification to 200 (champion uses 100).
+# Pushes the agent to chase larger moves; tests the return/penalty balance.
+# One variable changed from the champion base.
+env:
+  reward_scale: 200.0

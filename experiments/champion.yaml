@@ -1,0 +1,30 @@
+# ── CURRENT CHAMPION — single source of truth for "our best model" ──────────────
+# Architecture: Dueling + PER + N-step=2, with a doubled drawdown penalty.
+# Lineage: dueling_per_n2 (v3) + risk_penalty 0.002 (this was "reward_tune_c").
+#
+# Why this is the champion (walk-forward, 4 folds — the honest, multi-window test):
+#   reward_tune_c  mean Sharpe 1.01  | mean return 4.25%   <- only config above B&H
+#   dueling_per_n2 mean Sharpe 0.81  | mean return 4.00%
+#   buy_and_hold   mean Sharpe 0.97  | mean return 0.45%
+# Single-window v3 looked stronger (Sharpe 1.41) but that was window-specific; the
+# walk-forward number is the one to trust.
+#
+# Capital-fraction position sizing (deploys real capital; the old shares cap left ~80%
+# of equity idle). This changes env dynamics, so the champion must be retrained under it.
+#
+# NOTE: a clean fixed-split checkpoint for this exact config has not been trained yet
+# (Tier 1 single-window failed; sizing just changed). Train one with:
+#   python -m ai_trader --mode train --run-id champion --override experiments/champion.yaml
+# then re-run walk-forward for fresh, honest numbers.
+#
+# This file is self-contained (does not rely on config.yaml defaults) so its meaning
+# never drifts when the base config changes.
+agent:
+  network: "dueling"
+  replay: "per"
+  n_steps: 2
+env:
+  risk_penalty: 0.002
+  position_sizing: "fraction"
+  trade_fraction: 0.25
+  max_exposure: 1.0

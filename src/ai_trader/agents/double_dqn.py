@@ -68,6 +68,7 @@ class DoubleDQNAgent:
             self._per_beta_increment = 0.0
 
         self._loss_fn = nn.SmoothL1Loss(reduction="none")
+        self._optimizer_stepped = False  # gate LR scheduler until the first optimizer.step()
 
     def choose_action(self, state: np.ndarray, explore: bool = True) -> int:
         if explore and np.random.rand() < self.epsilon:
@@ -127,14 +128,16 @@ class DoubleDQNAgent:
         # Gradient clipping guards against exploding updates on volatile market days.
         nn.utils.clip_grad_norm_(self.q_net.parameters(), max_norm=1.0)
         self.optimizer.step()
+        self._optimizer_stepped = True
 
         soft_update(self.target_net, self.q_net, self.tau)
         return float(loss.item())
 
     def end_episode(self) -> float:
-        """Decay ε and step the LR scheduler. Returns the new ε."""
+        """Decay ε and step the LR scheduler (only after a real optimizer step). Returns the new ε."""
         self.epsilon = max(self.epsilon_min, self.epsilon * self.epsilon_decay)
-        self.lr_scheduler.step()
+        if self._optimizer_stepped:
+            self.lr_scheduler.step()
         return self.epsilon
 
     def save(self, filepath: str) -> None:

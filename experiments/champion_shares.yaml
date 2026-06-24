@@ -1,0 +1,5 @@
+# Baseline ablation — the champion but with legacy SHARES sizing instead of fraction.
+# Purpose: confirm capital-fraction sizing actually helped vs the old ~19%-deployed regime.
+# One variable changed from the champion base (config.yaml).
+env:
+  position_sizing: "shares"

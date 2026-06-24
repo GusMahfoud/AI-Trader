@@ -97,9 +97,24 @@ def test_buy_and_hold_policy_returns_expected_keys(synthetic_config):
     test_env.close()
 
 
-def test_buy_and_hold_makes_exactly_one_trade(synthetic_config):
+def test_buy_and_hold_ramps_to_max_position_then_holds(synthetic_config):
     _, _, test_env = make_env_bundle(synthetic_config)
+    max_position = synthetic_config["env"]["max_position"]
     metrics = evaluate_buy_and_hold_policy(test_env, episodes=1, max_steps=20, seed=42)
-    # B&H buys once and holds — exactly 1 trade.
-    assert metrics["avg_num_trades"] == pytest.approx(1.0, abs=0.01)
+    # B&H buys one unit per step until full (max_position), then holds — so it
+    # makes exactly max_position trades over the episode.
+    assert metrics["avg_num_trades"] == pytest.approx(float(max_position), abs=0.01)
+    test_env.close()
+
+
+def test_buy_and_hold_fraction_mode_deploys_then_holds(synthetic_config):
+    cfg = dict(synthetic_config)
+    cfg["env"] = {
+        **cfg["env"], "position_sizing": "fraction", "trade_fraction": 0.25, "max_exposure": 1.0,
+    }
+    _, _, test_env = make_env_bundle(cfg)
+    metrics = evaluate_buy_and_hold_policy(test_env, episodes=1, max_steps=30, seed=42)
+    assert "avg_sharpe" in metrics
+    # ~4 buys (0.25 steps) to reach full exposure, then holds — a handful of trades, not 0.
+    assert 1 <= metrics["avg_num_trades"] <= 10
     test_env.close()

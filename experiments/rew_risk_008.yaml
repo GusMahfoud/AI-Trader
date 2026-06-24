@@ -1,0 +1,5 @@
+# Tier 2 (reward) — quadruple the drawdown penalty to 0.008 (champion uses 0.002).
+# Upper-bound test on how hard to penalise drawdown before returns collapse.
+# One variable changed from the champion base.
+env:
+  risk_penalty: 0.008

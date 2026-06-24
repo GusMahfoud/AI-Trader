@@ -1,0 +1,5 @@
+# Tier 2 (reward) — remove the position-size penalty (champion uses 0.0002).
+# Under fraction sizing the exposure-relative penalty may suppress healthy full deployment.
+# One variable changed from the champion base.
+env:
+  position_penalty: 0.0

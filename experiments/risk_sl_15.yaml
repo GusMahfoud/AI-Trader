@@ -1,0 +1,5 @@
+# Tier 5 (risk control) — hard stop-loss at 15% portfolio drawdown (champion: off).
+# Looser stop than risk_sl_10; tests where a useful exit threshold sits under full exposure.
+# One variable changed from the champion base.
+env:
+  stop_loss: 0.15

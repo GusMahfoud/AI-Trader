@@ -1,0 +1,4 @@
+# Tier 3 (algorithm) — uniform replay instead of prioritized (champion uses PER).
+# One variable changed from the champion base.
+agent:
+  replay: "uniform"

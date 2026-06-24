@@ -16,9 +16,12 @@ from ai_trader.agents import build_agent
 from ai_trader.data import feature_columns, load_featured_frame, normalize_bundle
 from ai_trader.data.splits import walk_forward_bounds
 from ai_trader.env import make_env
+from ai_trader.utils import get_logger
 
 from .evaluate import evaluate_buy_and_hold_policy, evaluate_policy
 from .train import train_on_envs
+
+logger = get_logger(__name__)
 
 
 def walk_forward(cfg: Dict[str, Any], out_dir: str) -> None:
@@ -54,7 +57,7 @@ def walk_forward(cfg: Dict[str, Any], out_dir: str) -> None:
             action_dim=int(train_env.action_space.n),
         )
 
-        print(f"=== Walk-forward fold {i + 1}/{n_splits} | test rows {bounds['test']} ===")
+        logger.info(f"=== Walk-forward fold {i + 1}/{n_splits} | test rows {bounds['test']} ===")
         best_path = train_on_envs(cfg, train_env, val_env, agent, str(fold_dir))
         agent.load(best_path)
 
@@ -90,14 +93,36 @@ def _write_summary(
             writer.writerow({"agent": "double_dqn", **row})
         for row in bh_rows:
             writer.writerow({"agent": "buy_and_hold", **row})
-    print(f"Saved walk-forward metrics: {csv_path}")
+    logger.info(f"Saved walk-forward metrics: {csv_path}")
 
-    print("=== Walk-Forward Summary (mean ± std across folds) ===")
+    _write_aggregate(out_dir, metric_keys, agent_rows, bh_rows)
+
+    logger.info("=== Walk-Forward Summary (mean ± std across folds) ===")
     for label, rows in [("DoubleDQN", agent_rows), ("BuyAndHold", bh_rows)]:
         sh_m, sh_s = _agg(rows, "avg_sharpe")
         ret_m, ret_s = _agg(rows, "avg_total_return")
         dd_m, dd_s = _agg(rows, "avg_max_drawdown")
-        print(
+        logger.info(
             f"{label:11s} sharpe={sh_m:.3f}±{sh_s:.3f} "
             f"return={ret_m:.3%}±{ret_s:.3%} drawdown={dd_m:.3%}±{dd_s:.3%}"
         )
+
+
+def _write_aggregate(
+    out_dir: Path,
+    metric_keys: List[str],
+    agent_rows: List[Dict[str, float]],
+    bh_rows: List[Dict[str, float]],
+) -> None:
+    """Write per-agent mean/std of each metric across folds to walk_forward_summary.csv."""
+    fieldnames = ["agent", "stat", *metric_keys]
+    csv_path = out_dir / "walk_forward_summary.csv"
+    with csv_path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        for agent_name, rows in [("double_dqn", agent_rows), ("buy_and_hold", bh_rows)]:
+            means = {k: _agg(rows, k)[0] for k in metric_keys}
+            stds = {k: _agg(rows, k)[1] for k in metric_keys}
+            writer.writerow({"agent": agent_name, "stat": "mean", **means})
+            writer.writerow({"agent": agent_name, "stat": "std", **stds})
+    logger.info(f"Saved walk-forward summary: {csv_path}")

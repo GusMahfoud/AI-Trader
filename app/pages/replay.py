@@ -27,7 +27,7 @@ def render(cfg: Dict[str, Any], bundle, ckpt_map: Dict[str, str]) -> None:
     demo_seed = st.sidebar.number_input("Seed", value=42, step=1)
 
     if not ckpt_path or ckpt_path == "No checkpoints found":
-        st.warning("No checkpoints found. Train an agent first with `python scripts/train.py`.")
+        st.warning("No checkpoints found. Train an agent first with `python -m ai_trader --mode train`.")
         return
 
     agent, env = load_agent(cfg, bundle, ckpt_path)
