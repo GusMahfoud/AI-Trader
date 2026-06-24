@@ -1,0 +1,5 @@
+# Tier 1 (sizing) — cap gross exposure at 50% of equity (champion uses 100%).
+# Tests whether holding back capital improves risk-adjusted return now that we deploy fully.
+# One variable changed from the champion base.
+env:
+  max_exposure: 0.5

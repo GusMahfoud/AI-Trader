@@ -15,6 +15,8 @@ except ImportError as exc:
 
 from ai_trader.data import DataBundle, build_data_bundle
 
+from .sizing import trade_limits
+
 
 class TradingEnv(gym.Env):
     """Discrete-action trading env over a chronologically split price series.
@@ -51,6 +53,10 @@ class TradingEnv(gym.Env):
         self.max_position = int(self._cfg.get("max_position", 10))
         self.allow_short = bool(self._cfg.get("allow_short", False))
         self.trade_size = int(self._cfg.get("trade_size", 1))
+        # "shares" = fixed trade_size/max_position; "fraction" = sized off current equity.
+        self.position_sizing = str(self._cfg.get("position_sizing", "shares")).lower()
+        self.trade_fraction = float(self._cfg.get("trade_fraction", 0.25))
+        self.max_exposure = float(self._cfg.get("max_exposure", 1.0))
         self.reward_scale = float(self._cfg.get("reward_scale", 1.0))
         self.risk_penalty = float(self._cfg.get("risk_penalty", 0.0))
         self.position_penalty = float(self._cfg.get("position_penalty", 0.0))
@@ -154,35 +160,52 @@ class TradingEnv(gym.Env):
         exposure = (self._position * price) / (abs(self._portfolio_value) + 1e-8)
         cash_frac = self._cash / (abs(self._portfolio_value) + 1e-8)
         unrealized = (self._portfolio_value - self.initial_cash) / (self.initial_cash + 1e-8)
-        pos_frac = self._position / max(1, self.max_position)
+        pos_frac = self._position_fraction(price)
 
         portfolio_vec = np.array([pos_frac, cash_frac, exposure, unrealized], dtype=np.float32)
         return np.concatenate([market_flat, portfolio_vec], axis=0).astype(np.float32)
+
+    def _position_fraction(self, price: float) -> float:
+        """Signed position size relative to the allowed maximum (mode-aware)."""
+        if self.position_sizing == "fraction":
+            equity = abs(self._cash + self._position * price) + 1e-8
+            return (self._position * price) / (self.max_exposure * equity + 1e-8)
+        return self._position / max(1, self.max_position)
 
     def _apply_action(self, action: int, price: float) -> Tuple[int, bool, float]:
         action = int(action)
         masked = False
         trade_units = 0
 
+        step_units, max_pos, min_pos = trade_limits(
+            self.position_sizing, price, self._cash, self._position,
+            trade_size=self.trade_size, max_position=self.max_position,
+            trade_fraction=self.trade_fraction, max_exposure=self.max_exposure,
+            allow_short=self.allow_short,
+        )
+
         if action == 2:  # buy
-            if self._position + self.trade_size <= self.max_position:
+            if step_units > 0 and self._position + step_units <= max_pos:
                 exec_price = price * (1.0 + self.slippage)
-                cost = exec_price * self.trade_size * (1.0 + self.transaction_cost)
+                cost = exec_price * step_units * (1.0 + self.transaction_cost)
                 if self._cash >= cost:
                     self._cash -= cost
-                    self._position += self.trade_size
-                    trade_units = self.trade_size
+                    self._position += step_units
+                    trade_units = step_units
                 else:
                     masked = True
             else:
                 masked = True
         elif action == 1:  # sell
-            if self._position - self.trade_size >= self._min_position:
+            # Clamp to the available position so an exit is always possible; for
+            # shares mode with trade_size=1 this is identical to the old strict check.
+            units = min(step_units, self._position - min_pos)
+            if units > 0:
                 exec_price = price * (1.0 - self.slippage)
-                proceeds = exec_price * self.trade_size * (1.0 - self.transaction_cost)
+                proceeds = exec_price * units * (1.0 - self.transaction_cost)
                 self._cash += proceeds
-                self._position -= self.trade_size
-                trade_units = -self.trade_size
+                self._position -= units
+                trade_units = -units
             else:
                 masked = True
 
@@ -245,7 +268,7 @@ class TradingEnv(gym.Env):
         step_return = (self._portfolio_value - prev_value) / (abs(prev_value) + 1e-8)
         drawdown = max(0.0, (self._peak_value - self._portfolio_value) / (self._peak_value + 1e-8))
         risk_cost = self.risk_penalty * drawdown
-        inventory_cost = self.position_penalty * abs(self._position) / max(1, self.max_position)
+        inventory_cost = self.position_penalty * abs(self._position_fraction(next_price))
 
         # Penalty for sitting idle with no position — prevents convergence to all-hold.
         if action == 0 and self._position == 0:

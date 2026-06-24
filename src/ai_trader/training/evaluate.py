@@ -7,6 +7,7 @@ from typing import Any, Deque, Dict, List, Optional, Tuple
 
 import numpy as np
 
+from ai_trader.env.sizing import trade_limits
 from ai_trader.risk.metrics import avg_win_loss_ratio, calmar_ratio, sortino_ratio, var_cvar, win_rate
 
 
@@ -158,52 +159,24 @@ def evaluate_policy(env, agent, episodes: int, max_steps: int, seed: int) -> Dic
     return _avg_summaries(summaries, rewards)
 
 
-def evaluate_random_policy(env, episodes: int, max_steps: int, seed: int) -> Dict[str, Any]:
-    initial_cash = float(getattr(env, "initial_cash", 10_000.0))
-    rewards: List[float] = []
-    summaries: List[Dict[str, float]] = []
+def _evaluate_scripted_policy(env, make_policy, episodes: int, max_steps: int, seed: int) -> Dict[str, Any]:
+    """Roll out a non-learning policy and aggregate metrics.
 
-    for ep in range(episodes):
-        obs, info = env.reset(seed=seed + ep)
-        total_reward = 0.0
-        final_info = info
-        done = False
-        for _ in range(max_steps):
-            action = int(env.action_space.sample())
-            obs, reward, terminated, truncated, info = env.step(action)
-            total_reward += float(reward)
-            final_info = info
-            done = terminated or truncated
-            if done:
-                break
-        if not done and hasattr(env, "_info"):
-            final_info = env._info(action_masked=False, full=True)
-        rewards.append(total_reward)
-        summaries.append(summarize_episode(final_info, initial_cash=initial_cash))
-
-    return _avg_summaries(summaries, rewards)
-
-
-def evaluate_buy_and_hold_policy(env, episodes: int, max_steps: int, seed: int) -> Dict[str, Any]:
-    """Buy one share at episode start, hold for the rest — cost-inclusive B&H benchmark.
-
-    Uses the same env constraints (trade_size, slippage, transaction_cost) as the DQN agent
-    so the comparison is apples-to-apples within the simulation.
+    *make_policy* is a zero-arg factory returning a fresh ``policy(env) -> int`` per
+    episode, so stateful policies (e.g. buy-and-hold) reset between episodes.
     """
     initial_cash = float(getattr(env, "initial_cash", 10_000.0))
     rewards: List[float] = []
     summaries: List[Dict[str, float]] = []
 
     for ep in range(episodes):
-        obs, info = env.reset(seed=seed + ep)
+        env.reset(seed=seed + ep)
+        policy = make_policy()
         total_reward = 0.0
-        final_info = info
+        final_info: Dict[str, Any] = {}
         done = False
-        bought = False
         for _ in range(max_steps):
-            action = 2 if not bought else 0  # buy once, then hold forever
-            bought = True
-            obs, reward, terminated, truncated, info = env.step(action)
+            _, reward, terminated, truncated, info = env.step(policy(env))
             total_reward += float(reward)
             final_info = info
             done = terminated or truncated
@@ -215,3 +188,41 @@ def evaluate_buy_and_hold_policy(env, episodes: int, max_steps: int, seed: int) 
         summaries.append(summarize_episode(final_info, initial_cash=initial_cash))
 
     return _avg_summaries(summaries, rewards)
+
+
+def evaluate_random_policy(env, episodes: int, max_steps: int, seed: int) -> Dict[str, Any]:
+    return _evaluate_scripted_policy(
+        env, lambda: (lambda e: int(e.action_space.sample())), episodes, max_steps, seed
+    )
+
+
+def _buy_fits(env, price: float) -> bool:
+    """True if a full sizing step would actually execute (room + affordable), mode-aware."""
+    step_units, max_pos, _ = trade_limits(
+        env.position_sizing, price, env._cash, env._position,
+        trade_size=env.trade_size, max_position=env.max_position,
+        trade_fraction=env.trade_fraction, max_exposure=env.max_exposure,
+        allow_short=env.allow_short,
+    )
+    if step_units <= 0 or env._position + step_units > max_pos:
+        return False
+    cost = price * (1.0 + env.slippage) * step_units * (1.0 + env.transaction_cost)
+    return env._cash >= cost
+
+
+def evaluate_buy_and_hold_policy(env, episodes: int, max_steps: int, seed: int) -> Dict[str, Any]:
+    """Stay maximally invested, then hold — cost-inclusive, mode-aware B&H benchmark.
+
+    Buys one sizing step whenever another fill fits under the agent's own limits
+    (``max_position`` in shares mode, ``max_exposure`` in fraction mode), so it deploys
+    the same capital the DQN agent is allowed and the comparison is apples-to-apples.
+    """
+
+    def make_policy():
+        def policy(e) -> int:
+            price = float(e._price_at(e._cursor))
+            return 2 if _buy_fits(e, price) else 0
+
+        return policy
+
+    return _evaluate_scripted_policy(env, make_policy, episodes, max_steps, seed)

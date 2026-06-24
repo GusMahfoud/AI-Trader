@@ -1,6 +1,0 @@
-# Champion V1 — clean retrain of the confirmed best config (PER + N-step=2).
-# Run with:
-#   python -m ai_trader --mode train --run-id champion_v1 --override experiments/champion_v1.yaml
-agent:
-  replay: "per"
-  n_steps: 2

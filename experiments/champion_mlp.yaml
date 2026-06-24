@@ -1,0 +1,5 @@
+# Baseline ablation — the champion but with the plain MLP network instead of dueling.
+# Purpose: re-confirm the dueling edge holds under fraction sizing (the old edge was thin).
+# One variable changed from the champion base (config.yaml).
+agent:
+  network: "mlp"

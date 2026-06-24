@@ -1,4 +1,7 @@
-device: "cuda" # "auto", "cuda", "cpu" — set to "cuda" to fail loudly if GPU is missing
+# Defaults below = the current champion (Dueling + PER + N-step=2, doubled drawdown
+# penalty, capital-fraction sizing). experiments/champion.yaml mirrors this as the
+# self-contained source of truth; every other experiment file is a one-variable delta.
+device: "auto" # "auto", "cuda", "cpu" — "auto" falls back to CPU/MPS when no GPU
 
 env:
   # Data source: "csv", "yfinance", or "synthetic"
@@ -21,9 +24,15 @@ env:
   initial_cash: 10000
   transaction_cost: 0.0003
   slippage: 0.0001
-  max_position: 10
+  # Position sizing. "shares": fixed trade_size/max_position (legacy, price-dependent).
+  # "fraction": size each trade as a fraction of current equity (capital-aware,
+  # price-agnostic, multi-asset-ready) — see experiments/champion.yaml.
+  position_sizing: "fraction" # "shares" | "fraction" — champion uses fraction
+  max_position: 10 # shares-mode cap (max shares held)
+  trade_size: 1 # shares-mode units per trade
+  trade_fraction: 0.25 # fraction-mode: fraction of equity per trade
+  max_exposure: 1.0 # fraction-mode: max gross exposure as a fraction of equity
   allow_short: false
-  trade_size: 1
   stop_loss: null # e.g. 0.05 = exit if portfolio drops 5% from peak (null = off)
   take_profit: null # e.g. 0.10 = exit if portfolio is up 10% from start  (null = off)
 
@@ -31,7 +40,7 @@ env:
   lookback_window: 20
   random_start: true
   reward_scale: 100.0
-  risk_penalty: 0.001
+  risk_penalty: 0.002
   position_penalty: 0.0002
   inactivity_penalty: 0.005
 
@@ -44,9 +53,9 @@ agent:
   epsilon_min: 0.05
   epsilon_decay: 0.995
   tau: 0.001
-  network: "mlp" # "mlp" | "dueling"
-  replay: "uniform" # "uniform" | "per"
-  n_steps: 1 # N-step returns (1 = standard TD)
+  network: "dueling" # "mlp" | "dueling" — dueling is the validated champion (MLP deprecated, below B&H)
+  replay: "per" # "uniform" | "per"
+  n_steps: 2 # N-step returns (1 = standard TD)
   per_alpha: 0.6 # PER priority exponent
   per_beta_start: 0.4 # IS weight start (anneals to 1.0)
   per_beta_frames: 100000

@@ -1,0 +1,5 @@
+# Tier 2 (reward) — halve the return amplification to 50 (champion uses 100).
+# Re-balances the step-return signal vs the penalty terms under fraction sizing.
+# One variable changed from the champion base.
+env:
+  reward_scale: 50.0

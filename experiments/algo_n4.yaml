@@ -1,0 +1,4 @@
+# Tier 3 (algorithm) — N-step=4 returns (~one trading week; champion uses N-step=2).
+# One variable changed from the champion base.
+agent:
+  n_steps: 4

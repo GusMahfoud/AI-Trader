@@ -9,7 +9,9 @@ from typing import List
 import yaml
 
 from .training import compare, deploy, train, walk_forward
-from .utils import ensure_dir, load_config, make_run_id, set_seed
+from .utils import ensure_dir, get_logger, load_config, make_run_id, set_seed
+
+logger = get_logger(__name__)
 
 
 def _parse_seeds(raw: str) -> List[int]:
@@ -38,6 +40,8 @@ def main() -> None:
     set_seed(int(cfg["training"]["seed"]))
 
     run_id = make_run_id(args.run_id)
+    if Path(f"results/{run_id}").exists():
+        logger.warning("results/%s already exists — its contents will be overwritten.", run_id)
     out_dir = ensure_dir(f"results/{run_id}")
 
     # Snapshot the fully-merged config (base + overrides) so the run dir
@@ -46,8 +50,8 @@ def main() -> None:
     with snapshot_path.open("w", encoding="utf-8") as f:
         yaml.dump(cfg, f, default_flow_style=False, sort_keys=False)
 
-    print(f"Run ID : {run_id}")
-    print(f"Out dir: {out_dir}")
+    logger.info(f"Run ID : {run_id}")
+    logger.info(f"Out dir: {out_dir}")
 
     if args.mode == "train":
         train(cfg, out_dir=out_dir)

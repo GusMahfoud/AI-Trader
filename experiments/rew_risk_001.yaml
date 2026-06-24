@@ -1,0 +1,5 @@
+# Tier 2 (reward) — halve the drawdown penalty to 0.001 (champion uses 0.002).
+# With full capital deployed drawdowns are larger; test a lighter risk brake.
+# One variable changed from the champion base.
+env:
+  risk_penalty: 0.001

@@ -8,9 +8,12 @@ from typing import Any, Dict, List
 
 from ai_trader.agents import build_agent
 from ai_trader.env import make_env_bundle
+from ai_trader.utils import get_logger
 from ai_trader.viz import plot_demo_dashboard
 
 from .evaluate import buy_and_hold_curve, evaluate_policy, run_episode
+
+logger = get_logger(__name__)
 
 
 def deploy(
@@ -32,12 +35,12 @@ def deploy(
         action_dim=int(env.action_space.n),
     )
     agent.load(checkpoint_path)
-    print(f"Loaded checkpoint: {checkpoint_path}")
+    logger.info(f"Loaded checkpoint: {checkpoint_path}")
 
     rows: List[Dict[str, Any]] = []
     for seed in seeds:
         metrics = evaluate_policy(env, agent, episodes=episodes, max_steps=max_steps, seed=seed)
-        print(
+        logger.info(
             f"[Deploy seed={seed}] avg_reward={metrics['avg_reward']:.5f} "
             f"avg_return={metrics['avg_total_return']:.3%} sharpe={metrics['avg_sharpe']:.3f}"
         )
@@ -48,7 +51,7 @@ def deploy(
         w = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
         w.writeheader()
         w.writerows(rows)
-    print(f"Saved deploy summary: {summary_path}")
+    logger.info(f"Saved deploy summary: {summary_path}")
 
     demo = run_episode(env, agent, train=False, max_steps=max_steps, seed=seeds[0])
     info = demo["final_info"]
@@ -65,7 +68,7 @@ def deploy(
         output_path=demo_plot_path,
         title=f"Double DQN Deployment ({split})",
     )
-    print(f"Saved demo chart: {demo_plot_path}")
+    logger.info(f"Saved demo chart: {demo_plot_path}")
 
     train_env.close()
     val_env.close()

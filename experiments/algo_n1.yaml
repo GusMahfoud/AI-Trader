@@ -1,0 +1,4 @@
+# Tier 3 (algorithm) — standard 1-step TD returns (champion uses N-step=2).
+# One variable changed from the champion base.
+agent:
+  n_steps: 1

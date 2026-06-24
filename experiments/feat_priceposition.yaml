@@ -1,10 +1,4 @@
-# Feature ablation — add price_position (close within 52-week range) to the dueling champion.
-# One feature added from dueling_per_n2.
-# Run with:
-#   python -m ai_trader --mode train --run-id feat_priceposition_v3 --override experiments/feat_priceposition.yaml
-agent:
-  network: "dueling"
-  replay: "per"
-  n_steps: 2
+# Tier 4 (features) — add price_position (close within its 252-day range) to the champion.
+# One feature added; everything else inherits the champion base.
 env:
   extra_features: ["price_position"]

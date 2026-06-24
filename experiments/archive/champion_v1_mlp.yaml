@@ -1,0 +1,9 @@
+# DEPRECATED — MLP champion (PER + N-step=2). Kept for historical reproducibility only.
+# The MLP is below buy-and-hold on a risk-adjusted basis (Sharpe 0.69 vs B&H 0.72) and
+# has been dropped in favour of the dueling champion (see experiments/champion.yaml).
+# Made self-contained with an explicit network so it still trains an MLP after the base
+# config.yaml default flipped to "dueling".
+agent:
+  network: "mlp"
+  replay: "per"
+  n_steps: 2

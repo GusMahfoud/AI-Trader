@@ -1,0 +1,5 @@
+# Tier 2 (reward) — double the drawdown penalty to 0.004 (champion uses 0.002).
+# Larger drawdowns under fraction sizing may need a stronger risk brake.
+# One variable changed from the champion base.
+env:
+  risk_penalty: 0.004

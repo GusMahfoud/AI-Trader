@@ -1,0 +1,5 @@
+# Tier 5 (risk control) — hard stop-loss at 10% portfolio drawdown (champion: off).
+# Stop-losses failed under shares sizing (too tight for ~19% exposure); with full
+# deployment a 10% stop may now be a meaningful brake. One variable changed from base.
+env:
+  stop_loss: 0.10
