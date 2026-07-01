@@ -1,4 +1,4 @@
-# Defaults below = the current champion (Dueling + PER + N-step=2, doubled drawdown
+# Defaults below = the current champion (plain MLP + PER + N-step=2, doubled drawdown
 # penalty, capital-fraction sizing). experiments/champion.yaml mirrors this as the
 # self-contained source of truth; every other experiment file is a one-variable delta.
 device: "auto" # "auto", "cuda", "cpu" — "auto" falls back to CPU/MPS when no GPU
@@ -53,7 +53,7 @@ agent:
   epsilon_min: 0.05
   epsilon_decay: 0.995
   tau: 0.001
-  network: "dueling" # "mlp" | "dueling" — dueling is the validated champion (MLP deprecated, below B&H)
+  network: "mlp" # "mlp" | "dueling" — MLP beat dueling on walk-forward (1.26 vs 0.82 Sharpe, 3/4 folds)
   replay: "per" # "uniform" | "per"
   n_steps: 2 # N-step returns (1 = standard TD)
   per_alpha: 0.6 # PER priority exponent

@@ -11,13 +11,17 @@ dependencies:
   - pytorch-cuda=12.1
   - pip
   - pip:
-    - gymnasium
-    - numpy
-    - pandas
-    - pyarrow
-    - matplotlib
-    - pyyaml
-    - yfinance
-    - streamlit
-    - plotly
-    - pytest
+      - gymnasium
+      - numpy
+      - pandas
+      - pyarrow
+      - matplotlib
+      - pyyaml
+      - yfinance
+      - streamlit
+      - plotly
+      - pytest
+      - pydantic
+      - fastapi
+      - uvicorn
+      - httpx

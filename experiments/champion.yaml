@@ -1,26 +1,30 @@
 # ── CURRENT CHAMPION — single source of truth for "our best model" ──────────────
-# Architecture: Dueling + PER + N-step=2, with a doubled drawdown penalty.
-# Lineage: dueling_per_n2 (v3) + risk_penalty 0.002 (this was "reward_tune_c").
+# Architecture: plain MLP + PER + N-step=2, doubled drawdown penalty (risk 0.002),
+# capital-fraction sizing.
+# Lineage: previous champion (dueling + PER + n2, "reward_tune_c") with the dueling
+# head removed — this was the "champion_mlp" Tier-0 ablation in the model battery.
 #
-# Why this is the champion (walk-forward, 4 folds — the honest, multi-window test):
-#   reward_tune_c  mean Sharpe 1.01  | mean return 4.25%   <- only config above B&H
-#   dueling_per_n2 mean Sharpe 0.81  | mean return 4.00%
-#   buy_and_hold   mean Sharpe 0.97  | mean return 0.45%
-# Single-window v3 looked stronger (Sharpe 1.41) but that was window-specific; the
-# walk-forward number is the one to trust.
+# Why this is the champion (walk-forward, 4 rolling folds — the honest test):
+#   champion_mlp   mean Sharpe 1.26 ± 0.62 | return 19.5% | drawdown -13.3%
+#   old champion   mean Sharpe 0.82 ± 0.64 | return 13.6% | drawdown -15.5%
+#   buy_and_hold   mean Sharpe 1.12 ± 0.62 | return 25.2% | drawdown -18.3%
+# The MLP beat the dueling champion in 3 of 4 folds with better drawdown — the
+# dueling head was not earning its complexity. HONEST CAVEAT: the +0.14 Sharpe edge
+# over buy-and-hold is within noise (SE ≈ 0.31 over 4 folds). This is a
+# simplification promotion, not an alpha claim.
+# Battery keeps: PER (uniform replay collapsed to 0.43), fraction sizing (shares
+# left ~80% of capital idle), risk_penalty 0.002 (reward tier was all noise).
 #
-# Capital-fraction position sizing (deploys real capital; the old shares cap left ~80%
-# of equity idle). This changes env dynamics, so the champion must be retrained under it.
-#
-# NOTE: a clean fixed-split checkpoint for this exact config has not been trained yet
-# (Tier 1 single-window failed; sizing just changed). Train one with:
+# NOTE: a clean fixed-split checkpoint for this config has not been trained yet.
+# Train one with:
 #   python -m ai_trader --mode train --run-id champion --override experiments/champion.yaml
-# then re-run walk-forward for fresh, honest numbers.
+# then re-run walk-forward for fresh, honest numbers:
+#   python -m ai_trader --mode walk_forward --run-id wf_champion --override experiments/champion.yaml
 #
 # This file is self-contained (does not rely on config.yaml defaults) so its meaning
 # never drifts when the base config changes.
 agent:
-  network: "dueling"
+  network: "mlp"
   replay: "per"
   n_steps: 2
 env:
