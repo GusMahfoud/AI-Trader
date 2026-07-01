@@ -19,6 +19,7 @@ from ai_trader.env import make_env
 from ai_trader.utils import get_logger
 
 from .evaluate import evaluate_buy_and_hold_policy, evaluate_policy
+from .report import build_walk_forward_report, write_report
 from .train import train_on_envs
 
 logger = get_logger(__name__)
@@ -72,6 +73,12 @@ def walk_forward(cfg: Dict[str, Any], out_dir: str) -> None:
             env.close()
 
     _write_summary(Path(out_dir), agent_rows, bh_rows)
+
+    report = build_walk_forward_report(
+        run_id=Path(out_dir).name, cfg=cfg, agent_rows=agent_rows, bh_rows=bh_rows
+    )
+    report_path = write_report(Path(out_dir), report)
+    logger.info(f"Saved walk-forward report: {report_path}")
 
 
 def _agg(rows: List[Dict[str, float]], key: str) -> Tuple[float, float]:
