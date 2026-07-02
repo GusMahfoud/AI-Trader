@@ -14,6 +14,11 @@ venv/
 # IDE
 .vscode/
 
+# Cursor project config (holds MCP access tokens) + local secrets
+.cursor/
+.env
+!.env.example
+
 # macOS
 .DS_Store
 

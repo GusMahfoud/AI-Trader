@@ -21,7 +21,8 @@ dependencies:
       - streamlit
       - plotly
       - pytest
-      - pydantic
-      - fastapi
-      - uvicorn
-      - httpx
+    - pydantic
+    - fastapi
+    - uvicorn
+    - httpx
+    - psycopg[binary]
