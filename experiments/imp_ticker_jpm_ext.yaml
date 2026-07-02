@@ -1,0 +1,9 @@
+# Generalization battery 2 — champion on JPM under the EXTENDED protocol
+# (2005 start, 8 folds). Cyclical financial spanning the 2008 crash: stresses
+# drawdown control, where the agent's edge over buy-and-hold actually lives.
+# One delta from the extended champion baseline (imp_champion_ext): ticker only.
+env:
+  ticker: "JPM"
+  start_date: "2005-01-01"
+training:
+  n_splits: 8

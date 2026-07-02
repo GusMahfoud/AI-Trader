@@ -1,0 +1,9 @@
+# Generalization battery 1 — champion on MSFT under the EXTENDED protocol
+# (2005 start, 8 folds). Same mega-cap uptrend profile as AAPL: if the champion
+# learned anything transferable, this is where it should transfer most easily.
+# One delta from the extended champion baseline (imp_champion_ext): ticker only.
+env:
+  ticker: "MSFT"
+  start_date: "2005-01-01"
+training:
+  n_splits: 8

@@ -1,0 +1,8 @@
+# Improvement battery 3 — champion + all regime features under the EXTENDED protocol
+# (2005 start, 8 folds). The headline challenger: features were the only tier that
+# improved consistency, and this measures them with enough folds to trust the answer.
+env:
+  start_date: "2005-01-01"
+  extra_features: ["volume_regime", "vol_regime", "price_position"]
+training:
+  n_splits: 8

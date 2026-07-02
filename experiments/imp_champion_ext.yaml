@@ -1,0 +1,9 @@
+# Improvement battery 2 — champion re-baseline under the EXTENDED protocol:
+# 2005 start (~2.5x more data) and 8 walk-forward folds instead of 4.
+# With 4 folds the SE of mean Sharpe is ~0.31 — edges smaller than ~0.3 are
+# undetectable. This run re-measures the champion with real statistical power;
+# all extended-protocol challengers compare against THIS baseline, not the 4-fold one.
+env:
+  start_date: "2005-01-01"
+training:
+  n_splits: 8
