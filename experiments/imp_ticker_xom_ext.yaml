@@ -1,0 +1,10 @@
+# Generalization battery 3 — champion on XOM under the EXTENDED protocol
+# (2005 start, 8 folds). Energy name that traded sideways for a decade: the
+# regime where buy-and-hold is weakest and an active agent has the most room
+# to win. If the agent can't beat B&H here, the strategy adds no alpha anywhere.
+# One delta from the extended champion baseline (imp_champion_ext): ticker only.
+env:
+  ticker: "XOM"
+  start_date: "2005-01-01"
+training:
+  n_splits: 8

@@ -8,6 +8,14 @@ from typing import List
 
 import yaml
 
+# torch and pyarrow bundle conflicting native DLLs on Windows; if torch loads
+# first, the parquet cache write crashes with an access violation. Load pyarrow
+# before anything that imports torch.
+try:
+    import pyarrow  # noqa: F401
+except ImportError:
+    pass
+
 from .training import compare, deploy, train, walk_forward
 from .utils import ensure_dir, get_logger, load_config, make_run_id, set_seed
 

@@ -17,6 +17,14 @@ import matplotlib
 # there and end-of-train plots only ever get saved to files anyway.
 matplotlib.use("Agg")
 
+# torch and pyarrow bundle conflicting native DLLs on Windows; if torch loads
+# first, the parquet cache write crashes with an access violation. Load pyarrow
+# before anything that imports torch.
+try:
+    import pyarrow  # noqa: F401
+except ImportError:
+    pass
+
 from ai_trader.api.spec import ModelSpec
 from ai_trader.training import train, walk_forward
 from ai_trader.training.report import REPORT_FILENAME

@@ -1,0 +1,6 @@
+# Improvement battery 1 — MLP champion + all three regime features, STANDARD protocol
+# (2015 start, 4 folds). Direct comparison against champion_mlp's WF Sharpe 1.258:
+# feat_all was the battery's most consistent config (std 0.32, best drawdown) but was
+# only ever tested on the dueling base. One delta from the champion base (config.yaml).
+env:
+  extra_features: ["volume_regime", "vol_regime", "price_position"]

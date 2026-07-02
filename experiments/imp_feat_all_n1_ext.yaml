@@ -1,0 +1,12 @@
+# Improvement battery 4 — features + 1-step TD under the EXTENDED protocol.
+# algo_n1 was the battery's 2nd-best WF config (1.23) but carried by one fold;
+# this tests the untested mlp+features+n1 combination with 8 folds to separate
+# real effect from luck. Two deltas from the champion base — combo test, so any
+# win must be re-ablated before promotion.
+env:
+  start_date: "2005-01-01"
+  extra_features: ["volume_regime", "vol_regime", "price_position"]
+agent:
+  n_steps: 1
+training:
+  n_splits: 8
