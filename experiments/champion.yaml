@@ -32,3 +32,4 @@ env:
   position_sizing: "fraction"
   trade_fraction: 0.25
   max_exposure: 1.0
+  underexposure_penalty: 0.0 # champion predates the idle-capital penalty; pinned off

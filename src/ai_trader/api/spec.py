@@ -50,6 +50,7 @@ class EnvSpec(BaseModel):
     risk_penalty: float = Field(default=0.002, ge=0.0)
     position_penalty: float = Field(default=0.0002, ge=0.0)
     inactivity_penalty: float = Field(default=0.005, ge=0.0)
+    underexposure_penalty: float = Field(default=0.0, ge=0.0)
 
     @model_validator(mode="after")
     def _check_cross_fields(self) -> "EnvSpec":

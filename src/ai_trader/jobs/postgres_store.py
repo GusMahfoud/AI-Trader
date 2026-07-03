@@ -39,14 +39,31 @@ class PostgresJobStore:
     """JobStore implementation over a single autocommit psycopg connection."""
 
     def __init__(self, db_url: str) -> None:
-        self._conn = psycopg.connect(db_url, autocommit=True, row_factory=dict_row)
+        self._db_url = db_url
+        self._conn = self._connect()
+
+    def _connect(self) -> psycopg.Connection:
+        return psycopg.connect(self._db_url, autocommit=True, row_factory=dict_row)
+
+    def _execute(self, query: str, params: Any = None) -> psycopg.Cursor:
+        """Execute with one reconnect retry — the Supabase pooler drops
+        connections left idle during multi-hour training runs."""
+        try:
+            return self._conn.execute(query, params)
+        except psycopg.OperationalError:
+            try:
+                self._conn.close()
+            except Exception:  # noqa: BLE001 — connection already dead
+                pass
+            self._conn = self._connect()
+            return self._conn.execute(query, params)
 
     def close(self) -> None:
         """Close the underlying connection."""
         self._conn.close()
 
     def enqueue(self, kind: str, spec: Dict[str, Any], user_id: str) -> str:
-        row = self._conn.execute(
+        row = self._execute(
             "insert into public.runs (user_id, kind, spec) values (%s, %s, %s) returning id",
             (user_id, kind, json.dumps(spec)),
         ).fetchone()
@@ -54,7 +71,7 @@ class PostgresJobStore:
         return str(row["id"])
 
     def claim(self) -> Optional[Run]:
-        row = self._conn.execute(
+        row = self._execute(
             f"""
             update public.runs
             set status = 'running', started_at = now()
@@ -73,39 +90,39 @@ class PostgresJobStore:
     def mark_succeeded(
         self, run_id: str, run_dir: str, report: Optional[Dict[str, Any]] = None
     ) -> None:
-        self._conn.execute(
+        self._execute(
             "update public.runs set status = 'succeeded', run_dir = %s, finished_at = now() "
             "where id = %s",
             (run_dir, run_id),
         )
         if report is not None:
-            self._conn.execute(
+            self._execute(
                 "insert into public.run_metrics (run_id, report) values (%s, %s) "
                 "on conflict (run_id) do update set report = excluded.report",
                 (run_id, json.dumps(report, default=float)),
             )
 
     def mark_failed(self, run_id: str, error: str) -> None:
-        self._conn.execute(
+        self._execute(
             "update public.runs set status = 'failed', error = %s, finished_at = now() "
             "where id = %s",
             (error[:4000], run_id),
         )
 
     def get(self, run_id: str) -> Optional[Run]:
-        row = self._conn.execute(
+        row = self._execute(
             f"select {_RUN_COLUMNS} from public.runs where id = %s", (run_id,)
         ).fetchone()
         return _to_run(row) if row else None
 
     def get_report(self, run_id: str) -> Optional[Dict[str, Any]]:
-        row = self._conn.execute(
+        row = self._execute(
             "select report from public.run_metrics where run_id = %s", (run_id,)
         ).fetchone()
         return row["report"] if row else None
 
     def list_recent(self, user_id: str, limit: int = 20) -> List[Run]:
-        rows = self._conn.execute(
+        rows = self._execute(
             f"select {_RUN_COLUMNS} from public.runs where user_id = %s "
             "order by created_at desc limit %s",
             (user_id, limit),

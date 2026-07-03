@@ -1,0 +1,11 @@
+# Capital-utilization battery 2 — double the per-trade size, EXTENDED protocol
+# (AAPL, 2005 start, 8 folds). At trade_fraction 0.25 full exposure needs 4 consecutive
+# buys the policy rarely strings together; at 0.5 it needs 2. Tests whether the return
+# gap is a sizing-friction artifact. One delta from the extended champion baseline
+# (imp_champion_ext, WF Sharpe 0.744). size_tradefrac_50 screened well in-window but
+# was never walk-forwarded.
+env:
+  start_date: "2005-01-01"
+  trade_fraction: 0.5
+training:
+  n_splits: 8

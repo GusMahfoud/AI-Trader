@@ -138,6 +138,49 @@ def test_fraction_mode_pos_frac_stays_bounded(synthetic_config):
     assert -1.5 <= pos_frac <= 1.5
 
 
+def test_underexposure_penalty_charges_idle_capital(synthetic_config):
+    """A flat book pays the full penalty: reward drops by exactly the coefficient."""
+    penalty = 0.05
+    env_off = make_env(_fraction_cfg(synthetic_config), split="train")
+    env_on = make_env(_fraction_cfg(synthetic_config, underexposure_penalty=penalty), split="train")
+    env_off.reset(seed=42)
+    env_on.reset(seed=42)
+
+    # Hold while flat: pos_frac = 0, so underexposure cost = penalty * 1.0.
+    _, reward_off, *_ = env_off.step(0)
+    _, reward_on, *_ = env_on.step(0)
+    assert reward_on == pytest.approx(reward_off - penalty, abs=1e-9)
+
+
+def test_underexposure_penalty_near_zero_when_fully_invested(synthetic_config):
+    """Once exposure approaches the cap, the idle-capital charge mostly vanishes."""
+    penalty = 0.05
+    env_off = make_env(_fraction_cfg(synthetic_config, trade_fraction=0.5), split="train")
+    env_on = make_env(
+        _fraction_cfg(synthetic_config, trade_fraction=0.5, underexposure_penalty=penalty),
+        split="train",
+    )
+    env_off.reset(seed=42)
+    env_on.reset(seed=42)
+
+    rewards_off, rewards_on = [], []
+    for action in [2, 2, 2, 2, 0]:  # buy to the exposure cap, then hold
+        _, r_off, *_ = env_off.step(action)
+        _, r_on, *_ = env_on.step(action)
+        rewards_off.append(r_off)
+        rewards_on.append(r_on)
+
+    # Same trajectory, so the reward gap on the final hold is exactly the
+    # underexposure cost — near zero at full deployment.
+    final_gap = rewards_off[-1] - rewards_on[-1]
+    assert 0.0 <= final_gap < penalty * 0.3
+
+
+def test_underexposure_penalty_defaults_off(synthetic_config):
+    env = make_env(_fraction_cfg(synthetic_config), split="train")
+    assert env.underexposure_penalty == 0.0
+
+
 @pytest.mark.parametrize("seed", [0, 7, 99])
 def test_reset_is_seed_deterministic(synthetic_config, seed):
     cfg = dict(synthetic_config)
