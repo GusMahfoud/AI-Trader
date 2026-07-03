@@ -1,0 +1,10 @@
+# Capital-utilization battery 1 — remove the per-step position tax, EXTENDED protocol
+# (AAPL, 2005 start, 8 folds). The champion captures only ~52% of B&H's return with the
+# same behavioral signature on 4 tickers; position_penalty literally charges the agent
+# for being invested, so zeroing it is the cheapest exposure lever. One delta from the
+# extended champion baseline (imp_champion_ext, WF Sharpe 0.744).
+env:
+  start_date: "2005-01-01"
+  position_penalty: 0.0
+training:
+  n_splits: 8

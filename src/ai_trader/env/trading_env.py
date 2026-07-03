@@ -22,7 +22,7 @@ class TradingEnv(gym.Env):
     """Discrete-action trading env over a chronologically split price series.
 
     Actions: 0 = hold, 1 = sell, 2 = buy. Reward is the scaled per-step
-    portfolio return minus risk / position / inactivity penalties.
+    portfolio return minus risk / position / inactivity / under-exposure penalties.
     """
 
     metadata = {"render_modes": []}
@@ -61,6 +61,7 @@ class TradingEnv(gym.Env):
         self.risk_penalty = float(self._cfg.get("risk_penalty", 0.0))
         self.position_penalty = float(self._cfg.get("position_penalty", 0.0))
         self.inactivity_penalty = float(self._cfg.get("inactivity_penalty", 0.0))
+        self.underexposure_penalty = float(self._cfg.get("underexposure_penalty", 0.0))
         self.random_start = bool(self._cfg.get("random_start", split == "train"))
         self._hold_streak: int = 0
 
@@ -268,7 +269,12 @@ class TradingEnv(gym.Env):
         step_return = (self._portfolio_value - prev_value) / (abs(prev_value) + 1e-8)
         drawdown = max(0.0, (self._peak_value - self._portfolio_value) / (self._peak_value + 1e-8))
         risk_cost = self.risk_penalty * drawdown
-        inventory_cost = self.position_penalty * abs(self._position_fraction(next_price))
+        pos_frac_abs = abs(self._position_fraction(next_price))
+        inventory_cost = self.position_penalty * pos_frac_abs
+
+        # Idle capital earns nothing: charge for the gap between deployed exposure
+        # and the allowed maximum (pos_frac is 1.0 at full deployment in both modes).
+        underexposure_cost = self.underexposure_penalty * max(0.0, 1.0 - pos_frac_abs)
 
         # Penalty for sitting idle with no position — prevents convergence to all-hold.
         if action == 0 and self._position == 0:
@@ -277,7 +283,13 @@ class TradingEnv(gym.Env):
             self._hold_streak = 0
         inactivity_cost = self.inactivity_penalty * min(self._hold_streak, 10) / 10.0
 
-        reward = float(self.reward_scale * step_return - risk_cost - inventory_cost - inactivity_cost)
+        reward = float(
+            self.reward_scale * step_return
+            - risk_cost
+            - inventory_cost
+            - inactivity_cost
+            - underexposure_cost
+        )
 
         self._equity_curve.append(self._portfolio_value)
         self._position_curve.append(self._position)

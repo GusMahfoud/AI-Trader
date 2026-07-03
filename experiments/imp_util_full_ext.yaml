@@ -1,0 +1,13 @@
+# Capital-utilization battery 4 — maximum-deployment combo, EXTENDED protocol
+# (AAPL, 2005 start, 8 folds). All three exposure levers at once: no position tax,
+# 2-buy path to full exposure, and the idle-capital penalty. This is the ceiling
+# test — if even this can't lift return capture above ~85% of B&H, reward shaping
+# is exhausted and alpha must come from new inputs (shorting, cross-asset, Kelly).
+# Three deltas — any win must be re-ablated before promotion.
+env:
+  start_date: "2005-01-01"
+  position_penalty: 0.0
+  trade_fraction: 0.5
+  underexposure_penalty: 0.005
+training:
+  n_splits: 8

@@ -1,0 +1,11 @@
+# Capital-utilization battery 3 — idle-capital penalty, EXTENDED protocol
+# (AAPL, 2005 start, 8 folds). New reward term: underexposure_penalty charges
+# coeff * (1 - |pos_frac|) per step, making cash cost something instead of only
+# nudging via the inactivity streak. 0.005 matches the inactivity penalty's maximum
+# so a fully idle book pays roughly double what it does today. One delta from the
+# extended champion baseline (imp_champion_ext, WF Sharpe 0.744).
+env:
+  start_date: "2005-01-01"
+  underexposure_penalty: 0.005
+training:
+  n_splits: 8
