@@ -25,7 +25,7 @@ from ai_trader.risk.metrics import equity_summary
 from ai_trader.risk.signal_metrics import ic_series, ic_summary, ndcg_series, topk_spread_series
 from ai_trader.utils import get_logger
 
-from .portfolio_sim import simulate_rank_portfolio
+from .portfolio_sim import PortfolioRules, simulate_rank_portfolio
 from .report import build_rank_report, write_report
 
 logger = get_logger(__name__)
@@ -42,6 +42,9 @@ def _rank_cfg(cfg: Dict[str, Any]) -> Dict[str, Any]:
     rank.setdefault("model", "momentum")
     rank.setdefault("label_bins", 4)
     rank.setdefault("feature_set", "v1")
+    rank.setdefault("buffer_k", 0)
+    rank.setdefault("weighting", "equal")
+    rank.setdefault("dd_brake", 0.0)
     return rank
 
 
@@ -116,14 +119,22 @@ def rank_backtest(cfg: Dict[str, Any], out_dir: str) -> None:
         else:
             test_panel["score"] = test_panel[score_column]
 
-        strat_equity = simulate_rank_portfolio(
-            test_closes, test_panel[["date", "ticker", "score"]],
-            top_k=top_k, rebalance_days=int(rank["rebalance_days"]), cost_rate=cost_rate,
+        score_cols = test_panel[["date", "ticker", "score", "vol_60"]].rename(
+            columns={"vol_60": "vol"}
         )
-        ew_equity = simulate_rank_portfolio(
-            test_closes, None, top_k=None,
-            rebalance_days=int(rank["rebalance_days"]), cost_rate=cost_rate,
+        strat_rules = PortfolioRules(
+            top_k=top_k,
+            rebalance_days=int(rank["rebalance_days"]),
+            cost_rate=cost_rate,
+            buffer_k=int(rank["buffer_k"]),
+            weighting=str(rank["weighting"]),
+            dd_brake=float(rank["dd_brake"]),
         )
+        ew_rules = PortfolioRules(
+            top_k=None, rebalance_days=int(rank["rebalance_days"]), cost_rate=cost_rate
+        )
+        strat_equity = simulate_rank_portfolio(test_closes, score_cols, strat_rules)
+        ew_equity = simulate_rank_portfolio(test_closes, None, ew_rules)
         bench_equity = _benchmark_equity(cfg, bench_ticker, test_dates, cost_rate)
 
         row = {**equity_summary(strat_equity), **_signal_row(test_panel, top_k), "fold": float(k)}

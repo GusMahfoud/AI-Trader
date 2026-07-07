@@ -134,6 +134,9 @@ class RankSpec(BaseModel):
     model: Literal["momentum", "lambdarank"] = "momentum"
     label_bins: int = Field(default=4, ge=2, le=10)
     feature_set: Literal["v1", "v2"] = "v1"
+    buffer_k: int = Field(default=0, ge=0)
+    weighting: Literal["equal", "inverse_vol"] = "equal"
+    dd_brake: float = Field(default=0.0, ge=0.0, lt=1.0)
 
 
 class ModelSpec(BaseModel):

@@ -132,6 +132,13 @@ rank:
   model: "momentum" # "momentum" (heuristic score) | "lambdarank" (LightGBM ranker per fold)
   label_bins: 4 # per-date fwd-return quantile grades for the ranker
   feature_set: "v1" # "v1" (7 base signals) | "v2" (+ vol-adj mom, 52w-high, up-ratio, sector ranks)
+  # Phase-5 portfolio rules. buffer_k 20 promoted 2026-07-07: run 6dea9161
+  # (wide top-10 + buffer) Sharpe 1.478 — first strategy to beat equal-weight
+  # (+0.008) AND SPY (+0.21). inverse_vol (2cebb413: 1.345) and dd_brake
+  # (ab898649: 1.161) both regressed and stay off.
+  buffer_k: 20 # keep incumbents while ranked <= buffer_k (0 = off)
+  weighting: "equal" # "equal" | "inverse_vol" (capital proportional to 1/vol_60)
+  dd_brake: 0.0 # halve exposure while drawdown from peak exceeds this fraction
 
 training:
   seed: 42
