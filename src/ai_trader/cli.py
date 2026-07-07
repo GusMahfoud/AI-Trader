@@ -16,7 +16,7 @@ try:
 except ImportError:
     pass
 
-from .training import compare, deploy, rank_backtest, train, walk_forward
+from .training import compare, deploy, generate_picks, rank_backtest, train, walk_forward
 from .utils import ensure_dir, get_logger, load_config, make_run_id, set_seed
 
 logger = get_logger(__name__)
@@ -31,7 +31,7 @@ def _parse_seeds(raw: str) -> List[int]:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Train/deploy/compare the Double DQN trading agent.")
-    parser.add_argument("--mode", choices=["train", "deploy", "compare", "walk_forward", "rank_backtest"], default="train")
+    parser.add_argument("--mode", choices=["train", "deploy", "compare", "walk_forward", "rank_backtest", "picks"], default="train")
     parser.add_argument("--checkpoint", type=str, default=None, help="Checkpoint path for deploy/compare.")
     parser.add_argument("--split", choices=["train", "val", "test"], default="test")
     parser.add_argument("--episodes", type=int, default=5, help="Episodes for deploy/compare evaluation.")
@@ -71,6 +71,10 @@ def main() -> None:
 
     if args.mode == "rank_backtest":
         rank_backtest(cfg, out_dir=out_dir)
+        return
+
+    if args.mode == "picks":
+        generate_picks(cfg, out_dir=out_dir)
         return
 
     if args.mode == "deploy":
