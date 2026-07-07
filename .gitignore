@@ -29,9 +29,8 @@ archived_results/
 # Per-run results (large files) and local experiment overrides
 results/
 
-Improvement_plan.md
+IMPROVEMENT_PLAN.md
 PLATFORM_PLAN.md
-CAPITAL_UTILIZATION_FUTURE.md
 METRICS_GUIDE.md
 
 data/

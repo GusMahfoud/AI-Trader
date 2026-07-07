@@ -1,0 +1,12 @@
+# Env battery — episode structure: 504-step episodes (two trading years).
+# Every episode resets to flat, so "rebuy immediately" is a learned artifact and
+# the agent structurally trails an instantly-deployed B&H for the first ~4 steps
+# of every episode; halving the reset frequency halves that tax and gives the
+# agent full market cycles to trade through. Env self-truncates episodes to the
+# split length where a fold's test window is shorter than 504. Extended
+# protocol, one delta.
+env:
+  start_date: "2005-01-01"
+training:
+  n_splits: 8
+  max_steps_per_episode: 504

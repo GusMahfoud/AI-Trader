@@ -20,7 +20,7 @@ def main() -> None:
     """Parse experiment stems and enqueue one run per YAML override file."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("stems", nargs="+", help="experiment file stems (no .yaml)")
-    parser.add_argument("--kind", default="walk_forward", choices=["train", "walk_forward"])
+    parser.add_argument("--kind", default="walk_forward", choices=["train", "walk_forward", "rank_backtest"])
     args = parser.parse_args()
 
     settings = load_settings()

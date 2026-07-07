@@ -1,0 +1,12 @@
+# Env battery — cost stress: transaction_cost 0.001 (10bps, ~3x current) with
+# slippage 5bps. Not an alpha experiment — a robustness gate. The champion
+# trades ~200x per episode set; if the edge dies at realistic retail costs the
+# env should charge them during training so the agent learns selectivity, and
+# high-turnover variants should be discounted in every future comparison.
+# Extended protocol, one delta.
+env:
+  start_date: "2005-01-01"
+  transaction_cost: 0.001
+  slippage: 0.0005
+training:
+  n_splits: 8

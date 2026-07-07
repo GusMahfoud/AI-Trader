@@ -53,6 +53,49 @@ def test_summarize_drawdown_is_negative_after_peak_then_fall():
     np.testing.assert_allclose(out["max_drawdown"], -0.25, rtol=1e-6)
 
 
+def test_summarize_exposure_zero_when_flat():
+    info = {
+        "equity_curve": [10_000.0] * 4,
+        "position_curve": [0, 0, 0, 0],
+        "price_history": [100.0, 101.0, 102.0, 103.0],
+        "action_history": [0, 0, 0],
+    }
+    out = summarize_episode(info, initial_cash=10_000.0)
+    assert out["exposure"] == 0.0
+
+
+def test_summarize_exposure_one_when_fully_invested():
+    # 100 shares at each price with zero cash: position value == equity.
+    prices = [100.0, 110.0, 105.0]
+    info = {
+        "equity_curve": [100.0 * p for p in prices],
+        "position_curve": [100, 100, 100],
+        "price_history": prices,
+        "action_history": [0, 0],
+    }
+    out = summarize_episode(info, initial_cash=10_000.0)
+    assert out["exposure"] == pytest.approx(1.0, abs=1e-9)
+
+
+def test_summarize_exposure_zero_when_history_missing():
+    """Callers without position/price history (e.g. old artifacts) degrade safely."""
+    info = {"equity_curve": [10_000.0, 10_100.0], "action_history": [2]}
+    out = summarize_episode(info, initial_cash=10_000.0)
+    assert out["exposure"] == 0.0
+
+
+def test_buy_and_hold_policy_reports_high_exposure(synthetic_config):
+    cfg = dict(synthetic_config)
+    cfg["env"] = {
+        **cfg["env"], "position_sizing": "fraction", "trade_fraction": 0.25, "max_exposure": 1.0,
+    }
+    _, _, test_env = make_env_bundle(cfg)
+    metrics = evaluate_buy_and_hold_policy(test_env, episodes=1, max_steps=30, seed=42)
+    # B&H ramps to the exposure cap within ~4 steps and stays there.
+    assert metrics["avg_exposure"] > 0.7
+    test_env.close()
+
+
 def test_buy_and_hold_curve_starts_at_initial_cash():
     prices = [100.0, 105.0, 110.0, 102.0]
     curve = buy_and_hold_curve(prices, initial_cash=10_000.0)

@@ -1,0 +1,12 @@
+# Capital-utilization dose-response 2 — underexposure_penalty 0.01, EXTENDED
+# protocol (AAPL, 2005 start, 8 folds). Double the proven 0.005 dose (fe0641b3:
+# capture 73%, Sharpe 0.918, DD edge 5.2pts). With 0.005 and 0.0075 this gives a
+# 4-point dose-response curve (0 / 0.005 / 0.0075 / 0.01) to locate saturation.
+# At full idle this charge is 2x the inactivity penalty's maximum — if drawdowns
+# blow out here, the sweep is done and 0.005-0.0075 is the usable range.
+# One delta from the extended champion base.
+env:
+  start_date: "2005-01-01"
+  underexposure_penalty: 0.01
+training:
+  n_splits: 8

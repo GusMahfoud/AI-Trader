@@ -32,4 +32,8 @@ env:
   position_sizing: "fraction"
   trade_fraction: 0.25
   max_exposure: 1.0
-  underexposure_penalty: 0.0 # champion predates the idle-capital penalty; pinned off
+  # Promoted 2026-07-05 from the capital-util dose-response sweep (extended protocol,
+  # AAPL 2005, 8 folds): 0.005 is the peak — capture 59%->73%, Sharpe 0.744->0.918,
+  # DD edge 5.2pts, 5/8 folds beat B&H (run fe0641b3). 0.0075 and 0.01 both regress
+  # (9ea5e960, 9c16c2e6), so the shaping lever is closed at this value.
+  underexposure_penalty: 0.005

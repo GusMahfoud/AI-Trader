@@ -1,0 +1,11 @@
+# Env battery — observation: all three regime features on the PROMOTED 0.005
+# base. feat_all was flat on the old base (feat_all_ext_206ad3f7: Sharpe 0.728
+# vs baseline 0.744) but the interaction with the underexposure penalty is
+# untested — regime features may be exactly what lets the agent time when to
+# stay deployed vs step aside, which is the decision the penalty now forces it
+# to make. Extended protocol, one delta vs fe0641b3.
+env:
+  start_date: "2005-01-01"
+  extra_features: [volume_regime, vol_regime, price_position]
+training:
+  n_splits: 8

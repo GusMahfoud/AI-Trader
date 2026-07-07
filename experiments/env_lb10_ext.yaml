@@ -1,0 +1,9 @@
+# Env battery — observation: lookback_window 10 (halve the market context).
+# Hypothesis: most of the 20-day window is noise the MLP must average away; a
+# smaller state may generalize better across folds. Compare against env_lb40_ext
+# for a 3-point window curve (10 / 20 / 40). Extended protocol, one delta.
+env:
+  start_date: "2005-01-01"
+  lookback_window: 10
+training:
+  n_splits: 8
