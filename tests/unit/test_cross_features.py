@@ -9,8 +9,10 @@ import pytest
 from ai_trader.data.cross_features import (
     CROSS_FEATURES,
     RANK_COLUMNS,
+    V2_EXTRA_FEATURES,
     add_stock_features,
     build_cross_features,
+    model_feature_columns,
 )
 
 
@@ -64,3 +66,35 @@ def test_features_computed_per_ticker(panel):
     out = add_stock_features(panel)
     first_bbb = out[out["ticker"] == "BBB"].sort_values("date").iloc[0]
     assert pd.isna(first_bbb["mom_21"])  # BBB's own warmup, not AAA's tail
+
+
+def test_v2_features_present_and_complete(panel):
+    out = build_cross_features(panel, feature_set="v2")
+    for col in V2_EXTRA_FEATURES + ["srank_mom_12_1", "srank_ret_5"]:
+        assert col in out.columns
+        assert out[col].notna().all()
+
+
+def test_v2_dist_52w_high_nonpositive(panel):
+    out = build_cross_features(panel, feature_set="v2")
+    # Price can never exceed its own trailing 252d max.
+    assert (out["dist_52w_high"] <= 1e-12).all()
+
+
+def test_v1_output_unchanged_by_v2_existence(panel):
+    """Feature versioning: v1 runs must stay byte-identical for reproducibility."""
+    v1 = build_cross_features(panel, feature_set="v1")
+    assert "vol_adj_mom" not in v1.columns
+    assert model_feature_columns("v1") == RANK_COLUMNS
+    assert len(model_feature_columns("v2")) == len(RANK_COLUMNS) + 3 + 2
+
+
+def test_sector_map_covers_universe():
+    import yaml
+
+    from ai_trader.data.sectors import SECTOR_MAP
+
+    with open("config.yaml", encoding="utf-8") as f:
+        universe = yaml.safe_load(f)["env"]["universe"]
+    unmapped = [t for t in universe if t not in SECTOR_MAP]
+    assert unmapped == [], f"Universe tickers missing a sector: {unmapped}"

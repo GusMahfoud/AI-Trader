@@ -15,11 +15,12 @@ from typing import Any, Dict, List
 import numpy as np
 import pandas as pd
 
-from ai_trader.data.cross_features import build_cross_features, rank_col
-from ai_trader.data.labels import LABEL_COL, add_forward_returns
+from ai_trader.data.cross_features import build_cross_features, model_feature_columns, rank_col
+from ai_trader.data.labels import LABEL_COL, add_forward_returns, add_label_bins
 from ai_trader.data.loader import _load_market_data
 from ai_trader.data.purged_splits import assert_no_label_overlap, purged_walk_forward_bounds
 from ai_trader.data.universe import close_matrix, load_universe_panel
+from ai_trader.models.ranker import LambdaRankScorer
 from ai_trader.risk.metrics import equity_summary
 from ai_trader.risk.signal_metrics import ic_series, ic_summary, ndcg_series, topk_spread_series
 from ai_trader.utils import get_logger
@@ -38,6 +39,9 @@ def _rank_cfg(cfg: Dict[str, Any]) -> Dict[str, Any]:
     rank.setdefault("test_ratio", 0.4)
     rank.setdefault("score_feature", "mom_12_1")
     rank.setdefault("benchmark_ticker", "SPY")
+    rank.setdefault("model", "momentum")
+    rank.setdefault("label_bins", 4)
+    rank.setdefault("feature_set", "v1")
     return rank
 
 
@@ -71,9 +75,16 @@ def rank_backtest(cfg: Dict[str, Any], out_dir: str) -> None:
     top_k = int(rank["top_k"])
     horizon = int(rank["label_horizon"])
 
+    model = str(rank["model"])
+    feature_set = str(rank["feature_set"])
+    seed = int(cfg.get("training", {}).get("seed", 42))
+
     panel = load_universe_panel(cfg)
-    featured = add_forward_returns(build_cross_features(panel), horizon=horizon)
-    featured["score"] = featured[score_column]
+    featured = add_forward_returns(
+        build_cross_features(panel, feature_set=feature_set), horizon=horizon
+    )
+    if model == "lambdarank":
+        featured = add_label_bins(featured, n_bins=int(rank["label_bins"]))
     closes = close_matrix(panel)
 
     dates = pd.DatetimeIndex(featured["date"].unique()).sort_values()
@@ -93,7 +104,17 @@ def rank_backtest(cfg: Dict[str, Any], out_dir: str) -> None:
         lo, hi = fold["test"]
         test_dates = dates[lo:hi]
         test_closes = closes.reindex(test_dates)
-        test_panel = featured[featured["date"].isin(test_dates)]
+        test_panel = featured[featured["date"].isin(test_dates)].copy()
+
+        if model == "lambdarank":
+            train_dates = dates[fold["train"][0] : fold["train"][1]]
+            train_panel = featured[featured["date"].isin(train_dates)]
+            scorer = LambdaRankScorer(
+                feature_columns=model_feature_columns(feature_set), seed=seed
+            ).fit(train_panel)
+            test_panel["score"] = scorer.score(test_panel)
+        else:
+            test_panel["score"] = test_panel[score_column]
 
         strat_equity = simulate_rank_portfolio(
             test_closes, test_panel[["date", "ticker", "score"]],

@@ -1,0 +1,16 @@
+# Cross-sectional pivot Phase 4b — LambdaRank on the v2 feature set.
+# The v1 run (9b4fae0a) beat the momentum baseline (Sharpe 1.32 vs 1.20) and
+# SPY (+0.05, 4/6 folds) but IC stalled at 0.021 — the gate said iterate on
+# FEATURES, not capacity. v2 adds vol-adjusted momentum, 52-week-high distance,
+# up-day ratio, and sector-relative momentum/reversal ranks (macro-bet
+# neutralization). One delta vs rank_lambdarank.yaml: feature_set v2.
+# Decision gate (pre-committed): adopt v2 if ic_mean >= 0.03 OR
+# (ic_mean > v1's 0.021 AND Sharpe > v1's 1.32). Equal-weight Sharpe 1.42
+# remains the promotion-gate bar (survivorship-inflated, noted).
+env:
+  start_date: "2010-01-01"
+training:
+  n_splits: 6
+rank:
+  model: "lambdarank"
+  feature_set: "v2"

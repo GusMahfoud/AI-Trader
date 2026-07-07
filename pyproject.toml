@@ -19,6 +19,8 @@ dependencies = [
     "yfinance",
     "streamlit",
     "plotly",
+    "lightgbm",
+    "scikit-learn", # required by lightgbm.sklearn (LGBMRanker)
 ]
 
 [project.optional-dependencies]

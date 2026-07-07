@@ -129,6 +129,9 @@ rank:
   test_ratio: 0.4 # trailing share of dates tiled by the test folds
   score_feature: "mom_12_1" # any of the CROSS_FEATURES in data/cross_features.py
   benchmark_ticker: "SPY"
+  model: "momentum" # "momentum" (heuristic score) | "lambdarank" (LightGBM ranker per fold)
+  label_bins: 4 # per-date fwd-return quantile grades for the ranker
+  feature_set: "v1" # "v1" (7 base signals) | "v2" (+ vol-adj mom, 52w-high, up-ratio, sector ranks)
 
 training:
   seed: 42

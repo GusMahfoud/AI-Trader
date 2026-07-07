@@ -131,6 +131,9 @@ class RankSpec(BaseModel):
     test_ratio: float = Field(default=0.4, gt=0.0, lt=1.0)
     score_feature: str = "mom_12_1"
     benchmark_ticker: str = "SPY"
+    model: Literal["momentum", "lambdarank"] = "momentum"
+    label_bins: int = Field(default=4, ge=2, le=10)
+    feature_set: Literal["v1", "v2"] = "v1"
 
 
 class ModelSpec(BaseModel):

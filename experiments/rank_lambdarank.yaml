@@ -1,0 +1,14 @@
+# Cross-sectional pivot Phase 4 — LightGBM LambdaRank scorer.
+# Hypothesis: learning to rank on all 7 cross-sectional percentile features
+# lifts IC above the momentum-only baseline (run 8333cc8b: ic_mean 0.021,
+# strategy Sharpe 1.20 vs equal-weight 1.42) and beats it net of costs.
+# Decision gate (pre-committed): adopt only if ic_mean >= 0.03 AND strategy
+# Sharpe > momentum baseline's 1.20; if it can't beat the dumb baseline,
+# iterate on features, not model capacity. Hyperparams are pre-committed in
+# models/ranker.py — do not tune against these folds.
+env:
+  start_date: "2010-01-01"
+training:
+  n_splits: 6
+rank:
+  model: "lambdarank"

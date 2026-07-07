@@ -47,3 +47,20 @@ def test_rank_backtest_produces_report(rank_config, tmp_path):
     assert verdict["n_folds"] == 2
     assert "sharpe_edge_vs_equal_weight" in verdict
     assert "sharpe_edge_vs_benchmark_bh" in verdict
+
+
+def test_rank_backtest_lambdarank_model(rank_config, tmp_path):
+    rank_config["rank"] = {
+        **rank_config["rank"],
+        "model": "lambdarank",
+        "label_bins": 3,
+    }
+    rank_backtest(rank_config, out_dir=str(tmp_path))
+
+    report = json.loads((tmp_path / "report.json").read_text(encoding="utf-8"))
+    assert report["kind"] == "rank_backtest"
+    strat = report["agents"]["rank_strategy"]
+    assert len(strat["folds"]) == 2
+    for row in strat["folds"]:
+        assert abs(float(row["sharpe"])) < 1e6
+        assert "ic_mean" in row
