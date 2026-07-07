@@ -33,4 +33,5 @@ IMPROVEMENT_PLAN.md
 PLATFORM_PLAN.md
 METRICS_GUIDE.md
 
-data/
+# Downloaded market data / parquet cache (root-level only — NOT src/ai_trader/data!)
+/data/
