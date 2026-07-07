@@ -58,6 +58,24 @@ You don't strictly need the editable install — `scripts/_bootstrap.py` (import
 
 ## Commands
 
+### Running experiments — ALWAYS use the worker queue
+
+**Never launch training/walk-forward experiments as individual foreground CLI runs.**
+Enqueue them on the job queue and let workers execute; specs are resolved against
+`config.yaml` at execution time, results land in `results/<run_id>/` with a
+`report.json`, and status is tracked in the DB instead of a terminal scrollback:
+
+```bash
+# Enqueue one run per experiment YAML stem (default kind: walk_forward)
+python scripts/enqueue_runs.py env_lean_ext env_short_ext
+
+# Start a worker to drain the queue (one per terminal for parallelism)
+python -m ai_trader.jobs.worker
+```
+
+Direct `python -m ai_trader --mode ...` invocations below are for quick local
+checks (deploy/compare/dashboard) only, not for experiment batteries.
+
 ```bash
 # Train (5000 episodes by default — see config.yaml)
 python -m ai_trader --mode train

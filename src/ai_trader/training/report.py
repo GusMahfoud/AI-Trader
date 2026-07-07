@@ -81,6 +81,56 @@ def build_walk_forward_report(
     }
 
 
+def _rank_verdict(
+    strategy_rows: List[Dict[str, float]],
+    benchmark_rows: Dict[str, List[Dict[str, float]]],
+) -> Dict[str, Any]:
+    """Headline comparison of the ranked portfolio against each benchmark."""
+    strat_sharpe, _ = _mean_std(strategy_rows, "sharpe")
+    verdict: Dict[str, Any] = {
+        "n_folds": len(strategy_rows),
+        "strategy_sharpe": strat_sharpe,
+        "ic_mean": _mean_std(strategy_rows, "ic_mean")[0],
+        "ic_ir": _mean_std(strategy_rows, "ic_ir")[0],
+    }
+    for name, rows in benchmark_rows.items():
+        bench_sharpe, _ = _mean_std(rows, "sharpe")
+        beats = sum(
+            1 for s, b in zip(strategy_rows, rows)
+            if float(s["sharpe"]) > float(b["sharpe"])
+        )
+        verdict[f"sharpe_edge_vs_{name}"] = strat_sharpe - bench_sharpe
+        verdict[f"folds_beating_{name}"] = beats
+        verdict[f"beats_{name}"] = strat_sharpe > bench_sharpe
+    return verdict
+
+
+def build_rank_report(
+    run_id: str,
+    cfg: Dict[str, Any],
+    strategy_rows: List[Dict[str, float]],
+    benchmark_rows: Dict[str, List[Dict[str, float]]],
+) -> Dict[str, Any]:
+    """Assemble the rank-backtest report from per-fold strategy/benchmark rows."""
+    if not strategy_rows:
+        raise ValueError("Need at least one strategy fold row.")
+    for name, rows in benchmark_rows.items():
+        if len(rows) != len(strategy_rows):
+            raise ValueError(f"Benchmark '{name}' has {len(rows)} rows, expected {len(strategy_rows)}.")
+    return {
+        "schema_version": REPORT_SCHEMA_VERSION,
+        "kind": "rank_backtest",
+        "run_id": run_id,
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "config": cfg,
+        "agents": {
+            "rank_strategy": _aggregate(strategy_rows),
+            **{name: _aggregate(rows) for name, rows in benchmark_rows.items()},
+        },
+        "verdict": _rank_verdict(strategy_rows, benchmark_rows),
+    }
+
+
 def write_report(out_dir: Path, report: Dict[str, Any]) -> Path:
     """Write the report to <out_dir>/report.json and return the path."""
     path = Path(out_dir) / REPORT_FILENAME

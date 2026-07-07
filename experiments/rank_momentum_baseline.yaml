@@ -1,0 +1,13 @@
+# Cross-sectional pivot Phase 3 — momentum top-K baseline (NO ML).
+# Hypothesis: 12-1 momentum top-5 over the 50-name universe reproduces the
+# documented momentum premium (positive spread vs equal-weight) on purged
+# forward-only folds. This is the pipeline trust gate: if a known-good signal
+# doesn't show up, the pipeline is buggy — fix before any ranker training.
+# Stop condition: strategy < equal_weight on Sharpe across most folds AND
+# ic_mean ~ 0 means investigate data/splits, not tune the strategy.
+# 2010 start (universe chosen as of 2010 — survivorship caveat documented in
+# data/universe.py). 6 folds over the trailing 40% of dates ≈ 1 year each.
+env:
+  start_date: "2010-01-01"
+training:
+  n_splits: 6

@@ -1,0 +1,12 @@
+# Env battery — exposure mechanics: trade_fraction 1/3 (3 steps flat-to-full
+# instead of 4). frac50 failed on the pre-underexposure base (util_frac50_ext,
+# Sharpe 0.694) and frac50+0.005 failed too (util_full_ext, 0.630), but 0.33 with
+# the promoted 0.005 base is untested — the failure may be step size overshoot,
+# not deployment speed. Stop condition: if this also regresses vs fe0641b3,
+# deployment granularity is a dead lever and only the sized-action env v2 can
+# move it. Extended protocol, one delta.
+env:
+  start_date: "2005-01-01"
+  trade_fraction: 0.33
+training:
+  n_splits: 8

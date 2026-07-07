@@ -39,6 +39,20 @@ def test_sortino_flat(flat_equity):
     assert result == pytest.approx(0.0, abs=1e-3)
 
 
+def test_sortino_no_down_days_is_finite():
+    # Monotonically rising equity has zero downside observations; the ratio is
+    # undefined and must return 0.0, not explode against an epsilon denominator.
+    equity = np.linspace(10_000, 11_000, 50)
+    assert sortino_ratio(equity) == 0.0
+
+
+def test_sortino_single_down_day_is_finite():
+    equity = np.linspace(10_000, 11_000, 50)
+    equity[25] = equity[24] * 0.99  # exactly one down step
+    result = sortino_ratio(equity)
+    assert abs(result) < 1e6
+
+
 def test_calmar_positive_trend(growing_equity):
     assert calmar_ratio(growing_equity) > 0
 

@@ -26,7 +26,7 @@ except ImportError:
     pass
 
 from ai_trader.api.spec import ModelSpec
-from ai_trader.training import train, walk_forward
+from ai_trader.training import rank_backtest, train, walk_forward
 from ai_trader.training.report import REPORT_FILENAME
 from ai_trader.utils import deep_merge, ensure_dir, get_logger, load_config, set_seed
 
@@ -50,6 +50,10 @@ def execute_run(run: Run, cfg: Dict[str, Any], out_dir: str) -> Optional[Dict[st
         return None
     if run.kind == "walk_forward":
         walk_forward(cfg, out_dir=out_dir)
+        report_path = Path(out_dir) / REPORT_FILENAME
+        return json.loads(report_path.read_text(encoding="utf-8"))
+    if run.kind == "rank_backtest":
+        rank_backtest(cfg, out_dir=out_dir)
         report_path = Path(out_dir) / REPORT_FILENAME
         return json.loads(report_path.read_text(encoding="utf-8"))
     raise ValueError(f"Unknown run kind: {run.kind}")

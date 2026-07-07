@@ -56,7 +56,10 @@ def _load_market_data(env_cfg: Dict[str, Any], seed: int) -> pd.DataFrame:
         ticker = str(env_cfg.get("ticker", "AAPL"))
         start = str(env_cfg.get("start_date", "2015-01-01"))
         end = env_cfg.get("end_date")
-        frame = yf.download(ticker, start=start, end=end, auto_adjust=False, progress=False)
+        # auto_adjust folds splits/dividends into close — required for any
+        # multi-year cross-ticker comparison (raw closes fake huge returns at splits).
+        adjust = bool(env_cfg.get("auto_adjust", False))
+        frame = yf.download(ticker, start=start, end=end, auto_adjust=adjust, progress=False)
         if frame.empty:
             raise ValueError(
                 f"No market data returned for ticker={ticker} start={start} end={end}."

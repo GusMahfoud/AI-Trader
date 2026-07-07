@@ -8,6 +8,7 @@ from .evaluate import (
     summarize_episode,
 )
 from .logger import DQNTrainingLogger
+from .rank_backtest import rank_backtest
 from .train import train, train_on_envs
 from .walk_forward import walk_forward
 
@@ -18,6 +19,7 @@ __all__ = [
     "deploy",
     "evaluate_policy",
     "evaluate_random_policy",
+    "rank_backtest",
     "run_episode",
     "summarize_episode",
     "train",

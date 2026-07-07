@@ -21,8 +21,18 @@ _EMPTY_SUMMARY = {
     "final_value": 0.0, "total_return": 0.0, "max_drawdown": 0.0,
     "sharpe": 0.0, "sortino": 0.0, "calmar": 0.0,
     "num_trades": 0.0, "win_rate": 0.0, "win_loss_ratio": 0.0,
-    "var_95": 0.0, "cvar_95": 0.0,
+    "var_95": 0.0, "cvar_95": 0.0, "exposure": 0.0,
 }
+
+
+def _mean_exposure(info: Dict[str, Any], equity: np.ndarray) -> float:
+    """Mean |position value| / equity over the episode — 1.0 = fully deployed."""
+    positions = np.asarray(info.get("position_curve", []), dtype=float)
+    prices = np.asarray(info.get("price_history", []), dtype=float)
+    if positions.size != equity.size or prices.size != equity.size or not equity.size:
+        return 0.0
+    exposure = np.abs(positions * prices) / np.maximum(np.abs(equity), 1e-8)
+    return float(np.mean(exposure))
 
 
 def summarize_episode(info: Dict[str, Any], initial_cash: float) -> Dict[str, float]:
@@ -55,6 +65,7 @@ def summarize_episode(info: Dict[str, Any], initial_cash: float) -> Dict[str, fl
         "win_loss_ratio": avg_win_loss_ratio(equity, actions),
         "var_95": var,
         "cvar_95": cvar,
+        "exposure": _mean_exposure(info, equity),
     }
 
 
@@ -143,6 +154,7 @@ def _avg_summaries(summaries: List[Dict[str, float]], rewards: List[float]) -> D
         "avg_win_loss_ratio": avg("win_loss_ratio"),
         "avg_var_95": avg("var_95"),
         "avg_cvar_95": avg("cvar_95"),
+        "avg_exposure": avg("exposure"),
     }
 
 

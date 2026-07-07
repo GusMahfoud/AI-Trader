@@ -20,6 +20,64 @@ env:
   # [volume_regime, vol_regime, price_position]. Empty = base 11 features only.
   extra_features: []
 
+  # Cross-sectional universe (rank_backtest mode). Fixed list of liquid US large
+  # caps that existed at the 2010 backtest start — yfinance has no point-in-time
+  # membership, so results carry a documented survivorship bias (names that later
+  # failed are absent). Empty list = single-ticker modes unaffected.
+  universe:
+    [
+      AAPL,
+      MSFT,
+      GOOGL,
+      AMZN,
+      JPM,
+      BAC,
+      WFC,
+      GS,
+      MS,
+      C,
+      USB,
+      JNJ,
+      PFE,
+      MRK,
+      ABT,
+      BMY,
+      LLY,
+      AMGN,
+      UNH,
+      XOM,
+      CVX,
+      COP,
+      SLB,
+      PG,
+      KO,
+      PEP,
+      WMT,
+      COST,
+      HD,
+      MCD,
+      NKE,
+      MO,
+      CL,
+      T,
+      VZ,
+      CSCO,
+      INTC,
+      ORCL,
+      IBM,
+      TXN,
+      QCOM,
+      ADP,
+      GE,
+      CAT,
+      MMM,
+      BA,
+      HON,
+      UPS,
+      DIS,
+      AXP,
+    ]
+
   # Trading dynamics
   initial_cash: 10000
   transaction_cost: 0.0003
@@ -43,7 +101,7 @@ env:
   risk_penalty: 0.002
   position_penalty: 0.0002
   inactivity_penalty: 0.005
-  underexposure_penalty: 0.0 # cost per step for idle capital (0 = off); see capital-util battery
+  underexposure_penalty: 0.005 # idle-capital cost; 0.005 = sweep peak (capture 59%->73%, Sharpe 0.918, 5/8 folds beat B&H); 0.0075/0.01 regress
 
 agent:
   gamma: 0.99
@@ -60,6 +118,17 @@ agent:
   per_alpha: 0.6 # PER priority exponent
   per_beta_start: 0.4 # IS weight start (anneals to 1.0)
   per_beta_frames: 100000
+
+# Cross-sectional rank backtest (--mode rank_backtest / kind: rank_backtest).
+# Baseline scores by the 12-1 momentum percentile; top_k names held equal-weight,
+# rebalanced monthly, costs from env.transaction_cost + env.slippage.
+rank:
+  top_k: 5
+  rebalance_days: 21 # trading days between rebalances (~1 month)
+  label_horizon: 21 # forward-return window for labels/IC (also the purge gap)
+  test_ratio: 0.4 # trailing share of dates tiled by the test folds
+  score_feature: "mom_12_1" # any of the CROSS_FEATURES in data/cross_features.py
+  benchmark_ticker: "SPY"
 
 training:
   seed: 42

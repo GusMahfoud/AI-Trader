@@ -1,0 +1,12 @@
+# Env battery — structural: allow shorting (config-only; sizing.py already
+# derives symmetric limits). Opens the only new alpha source available without
+# code changes — the agent can express bearish views instead of just going flat,
+# and both 2008-covering folds (1 and 5) are exactly where every long-only run
+# loses to nothing. Watch drawdowns: shorts in a secular AAPL uptrend can blow
+# past the long-only risk profile. Note |pos_frac| means a short position also
+# satisfies the underexposure penalty. Extended protocol, one delta.
+env:
+  start_date: "2005-01-01"
+  allow_short: true
+training:
+  n_splits: 8
