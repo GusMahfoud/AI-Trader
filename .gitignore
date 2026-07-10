@@ -32,6 +32,10 @@ results/
 IMPROVEMENT_PLAN.md
 PLATFORM_PLAN.md
 METRICS_GUIDE.md
+PAPER_TRADING.md
+
+# Personal paper-trading records (written by --mode picks)
+paper_trading/
 
 # Downloaded market data / parquet cache (root-level only — NOT src/ai_trader/data!)
 /data/

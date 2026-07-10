@@ -10,7 +10,7 @@ not an experiment.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import pandas as pd
 
@@ -26,10 +26,31 @@ from .rank_backtest import _rank_cfg
 logger = get_logger(__name__)
 
 PICKS_FILENAME = "picks.csv"
+PAPER_LOG_PATH = Path("paper_trading") / "picks_log.csv"
 
 
-def generate_picks(cfg: Dict[str, Any], out_dir: str) -> pd.DataFrame:
-    """Score the latest trading date and write the top-K picks with weights."""
+def _append_paper_log(out: pd.DataFrame, log_path: Path) -> None:
+    """Append this month's picks to the running paper-trading log (idempotent
+    per as_of date — re-running on the same day replaces that day's rows)."""
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    if log_path.exists():
+        log = pd.read_csv(log_path)
+        log = log[log["as_of"] != out["as_of"].iloc[0]]
+        log = pd.concat([log, out], ignore_index=True)
+    else:
+        log = out
+    log.to_csv(log_path, index=False)
+
+
+def generate_picks(
+    cfg: Dict[str, Any], out_dir: str, capital: Optional[float] = None
+) -> pd.DataFrame:
+    """Score the latest trading date and write the top-K picks with weights.
+
+    ``capital`` (your current paper-account value) sizes each pick into dollars
+    and shares; defaults to env.initial_cash. Every run also appends to the
+    persistent paper-trading log at paper_trading/picks_log.csv.
+    """
     rank = _rank_cfg(cfg)
     feature_set = str(rank["feature_set"])
     horizon = int(rank["label_horizon"])
@@ -59,21 +80,37 @@ def generate_picks(cfg: Dict[str, Any], out_dir: str) -> pd.DataFrame:
         picks.index, list(picks.index), picks["vol_60"], rules, scale=1.0
     )
 
+    cash = float(capital) if capital is not None else float(
+        cfg.get("env", {}).get("initial_cash", 10_000.0)
+    )
+    w = weights.reindex(picks.index).to_numpy()
+    closes = picks["close"].to_numpy()
+    dollars = w * cash
+
     out = pd.DataFrame(
         {
             "as_of": str(pd.Timestamp(as_of).date()),
             "rank": range(1, len(picks) + 1),
             "ticker": picks.index,
             "score": picks["score"].to_numpy(),
-            "weight": weights.reindex(picks.index).to_numpy(),
-            "close": picks["close"].to_numpy(),
+            "weight": w,
+            "close": closes,
+            "target_dollars": dollars.round(2),
+            "shares": (dollars / closes).round(2),
         }
     )
 
     path = Path(out_dir) / PICKS_FILENAME
     out.to_csv(path, index=False)
-    logger.info(f"Picks as of {out['as_of'].iloc[0]} (model={rank['model']}, top_k={top_k}):")
+    _append_paper_log(out, PAPER_LOG_PATH)
+
+    logger.info(
+        f"Picks as of {out['as_of'].iloc[0]} (model={rank['model']}, top_k={top_k}, capital=${cash:,.0f}):"
+    )
     for row in out.itertuples(index=False):
-        logger.info(f"  #{row.rank:02d} {row.ticker:6s} weight={row.weight:.3f} close={row.close:.2f}")
-    logger.info(f"Saved picks: {path}")
+        logger.info(
+            f"  #{row.rank:02d} {row.ticker:6s} weight={row.weight:.3f} "
+            f"close={row.close:9.2f}  buy ${row.target_dollars:>9,.2f} (~{row.shares} sh)"
+        )
+    logger.info(f"Saved picks: {path} | appended to {PAPER_LOG_PATH}")
     return out
