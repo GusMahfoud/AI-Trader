@@ -16,6 +16,7 @@ import pandas as pd
 
 from ai_trader.data.cross_features import build_cross_features, model_feature_columns, rank_col
 from ai_trader.data.labels import add_forward_returns, add_label_bins
+from ai_trader.data.sectors import name_of
 from ai_trader.data.universe import load_universe_panel
 from ai_trader.models.ranker import LambdaRankScorer
 from ai_trader.utils import get_logger
@@ -92,6 +93,7 @@ def generate_picks(
             "as_of": str(pd.Timestamp(as_of).date()),
             "rank": range(1, len(picks) + 1),
             "ticker": picks.index,
+            "name": [name_of(t) for t in picks.index],
             "score": picks["score"].to_numpy(),
             "weight": w,
             "close": closes,
@@ -109,7 +111,7 @@ def generate_picks(
     )
     for row in out.itertuples(index=False):
         logger.info(
-            f"  #{row.rank:02d} {row.ticker:6s} weight={row.weight:.3f} "
+            f"  #{row.rank:02d} {row.ticker:6s} {row.name:<28s} weight={row.weight:.3f} "
             f"close={row.close:9.2f}  buy ${row.target_dollars:>9,.2f} (~{row.shares} sh)"
         )
     logger.info(f"Saved picks: {path} | appended to {PAPER_LOG_PATH}")
