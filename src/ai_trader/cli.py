@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from datetime import date
 from pathlib import Path
 from typing import List
 
@@ -48,7 +49,10 @@ def main() -> None:
         cfg.setdefault("env", {})["refresh_data"] = True
     set_seed(int(cfg["training"]["seed"]))
 
-    run_id = make_run_id(args.run_id)
+    # Picks runs get a short date-only folder (picks_2026_07_10) — one per day,
+    # re-running the same day overwrites, matching the paper-log semantics.
+    default_id = f"picks {date.today().isoformat()}" if args.mode == "picks" else None
+    run_id = make_run_id(args.run_id or default_id)
     if Path(f"results/{run_id}").exists():
         logger.warning("results/%s already exists — its contents will be overwritten.", run_id)
     out_dir = ensure_dir(f"results/{run_id}")

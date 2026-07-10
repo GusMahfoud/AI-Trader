@@ -1,8 +1,9 @@
-"""Static sector map for the fixed 50-name universe.
+"""Static universe metadata: sector buckets and company names per ticker.
 
 Frozen alongside the universe list in config.yaml (GICS-style buckets, coarse on
-purpose). Used for sector-relative feature ranks; unknown tickers fall into
-"other" so a universe edit can never crash feature building.
+purpose). Sectors feed the sector-relative feature ranks; names make picks
+output human-readable. Unknown tickers fall back gracefully ("other" / the
+ticker itself) so a universe edit can never crash feature building or picks.
 """
 
 from __future__ import annotations
@@ -57,3 +58,46 @@ SECTOR_MAP: Dict[str, str] = {
 def sector_of(ticker: str) -> str:
     """Sector bucket for a ticker; 'other' when unmapped."""
     return SECTOR_MAP.get(ticker, "other")
+
+
+TICKER_NAMES: Dict[str, str] = {
+    "AAPL": "Apple", "MSFT": "Microsoft", "GOOGL": "Alphabet (Google)", "AMZN": "Amazon",
+    "JPM": "JPMorgan Chase", "BAC": "Bank of America", "WFC": "Wells Fargo",
+    "GS": "Goldman Sachs", "MS": "Morgan Stanley", "C": "Citigroup", "USB": "U.S. Bancorp",
+    "JNJ": "Johnson & Johnson", "PFE": "Pfizer", "MRK": "Merck", "ABT": "Abbott Laboratories",
+    "BMY": "Bristol-Myers Squibb", "LLY": "Eli Lilly", "AMGN": "Amgen",
+    "UNH": "UnitedHealth Group", "XOM": "Exxon Mobil", "CVX": "Chevron",
+    "COP": "ConocoPhillips", "SLB": "SLB (Schlumberger)", "PG": "Procter & Gamble",
+    "KO": "Coca-Cola", "PEP": "PepsiCo", "WMT": "Walmart", "COST": "Costco",
+    "HD": "Home Depot", "MCD": "McDonald's", "NKE": "Nike", "MO": "Altria",
+    "CL": "Colgate-Palmolive", "T": "AT&T", "VZ": "Verizon", "CSCO": "Cisco Systems",
+    "INTC": "Intel", "ORCL": "Oracle", "IBM": "IBM", "TXN": "Texas Instruments",
+    "QCOM": "Qualcomm", "ADP": "Automatic Data Processing", "GE": "GE Aerospace",
+    "CAT": "Caterpillar", "MMM": "3M", "BA": "Boeing", "HON": "Honeywell",
+    "UPS": "United Parcel Service", "DIS": "Walt Disney", "AXP": "American Express",
+    "ADBE": "Adobe", "AMD": "Advanced Micro Devices", "NVDA": "NVIDIA",
+    "MU": "Micron Technology", "HPQ": "HP Inc.", "AMAT": "Applied Materials",
+    "ADI": "Analog Devices", "INTU": "Intuit", "EBAY": "eBay", "EA": "Electronic Arts",
+    "BLK": "BlackRock", "SCHW": "Charles Schwab", "BK": "BNY Mellon",
+    "PNC": "PNC Financial", "COF": "Capital One", "MET": "MetLife",
+    "PRU": "Prudential Financial", "AIG": "American International Group",
+    "ALL": "Allstate", "TRV": "Travelers", "TMO": "Thermo Fisher Scientific",
+    "DHR": "Danaher", "MDT": "Medtronic", "SYK": "Stryker", "BSX": "Boston Scientific",
+    "GILD": "Gilead Sciences", "CI": "Cigna", "CVS": "CVS Health", "HUM": "Humana",
+    "BDX": "Becton Dickinson", "OXY": "Occidental Petroleum", "EOG": "EOG Resources",
+    "HAL": "Halliburton", "DVN": "Devon Energy", "FCX": "Freeport-McMoRan",
+    "NEM": "Newmont", "NUE": "Nucor", "APD": "Air Products",
+    "GIS": "General Mills", "K": "Kellanova (Kellogg)", "SYY": "Sysco", "KR": "Kroger",
+    "TJX": "TJX Companies", "ROST": "Ross Stores", "YUM": "Yum! Brands",
+    "SBUX": "Starbucks", "TGT": "Target", "LOW": "Lowe's",
+    "SO": "Southern Company", "DUK": "Duke Energy", "D": "Dominion Energy",
+    "EXC": "Exelon", "AEP": "American Electric Power", "NEE": "NextEra Energy",
+    "ED": "Consolidated Edison", "LMT": "Lockheed Martin", "NOC": "Northrop Grumman",
+    "GD": "General Dynamics", "DE": "Deere & Company", "EMR": "Emerson Electric",
+    "CSX": "CSX", "UNP": "Union Pacific", "FDX": "FedEx",
+}
+
+
+def name_of(ticker: str) -> str:
+    """Company name for a ticker; the ticker itself when unmapped."""
+    return TICKER_NAMES.get(ticker, ticker)

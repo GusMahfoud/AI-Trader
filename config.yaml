@@ -1,4 +1,4 @@
-# Defaults below = the current champion (plain MLP + PER + N-step=2, doubled drawdown
+﻿# Defaults below = the current champion (plain MLP + PER + N-step=2, doubled drawdown
 # penalty, capital-fraction sizing). experiments/champion.yaml mirrors this as the
 # self-contained source of truth; every other experiment file is a one-variable delta.
 device: "auto" # "auto", "cuda", "cpu" — "auto" falls back to CPU/MPS when no GPU
@@ -8,7 +8,8 @@ env:
   data_source: "yfinance"
   data_path: "data/AAPL.csv" # required when data_source="csv"
   ticker: "AAPL"
-  start_date: "2015-01-01"
+  # 2010 start matches the validated cross-sectional protocol (all rank_* runs).
+  start_date: "2010-01-01"
   end_date: null
   synthetic_length: 3000
 
@@ -20,10 +21,13 @@ env:
   # [volume_regime, vol_regime, price_position]. Empty = base 11 features only.
   extra_features: []
 
-  # Cross-sectional universe (rank_backtest mode). Fixed list of liquid US large
-  # caps that existed at the 2010 backtest start — yfinance has no point-in-time
-  # membership, so results carry a documented survivorship bias (names that later
-  # failed are absent). Empty list = single-ticker modes unaffected.
+  # Cross-sectional universe (rank_backtest / picks modes). Fixed list of liquid
+  # US large caps that existed at the 2010 backtest start — yfinance has no
+  # point-in-time membership, so results carry a documented survivorship bias
+  # (names that later failed are absent). Promoted 2026-07-10 from the frozen 50
+  # to the WIDE 112-name list: breadth doubled IC to 0.043 (run 5c6ad10c) and
+  # backs the working strategy (b07ac9f3 / 6dea9161). K (Kellogg) removed —
+  # renamed ticker, download fails. Empty list = single-ticker modes unaffected.
   universe:
     [
       AAPL,
@@ -76,6 +80,68 @@ env:
       UPS,
       DIS,
       AXP,
+      ADBE,
+      AMD,
+      NVDA,
+      MU,
+      HPQ,
+      AMAT,
+      ADI,
+      INTU,
+      EBAY,
+      EA,
+      BLK,
+      SCHW,
+      BK,
+      PNC,
+      COF,
+      MET,
+      PRU,
+      AIG,
+      ALL,
+      TRV,
+      TMO,
+      DHR,
+      MDT,
+      SYK,
+      BSX,
+      GILD,
+      CI,
+      CVS,
+      HUM,
+      BDX,
+      OXY,
+      EOG,
+      HAL,
+      DVN,
+      FCX,
+      NEM,
+      NUE,
+      APD,
+      GIS,
+      SYY,
+      KR,
+      TJX,
+      ROST,
+      YUM,
+      SBUX,
+      TGT,
+      LOW,
+      SO,
+      DUK,
+      D,
+      EXC,
+      AEP,
+      NEE,
+      ED,
+      LMT,
+      NOC,
+      GD,
+      DE,
+      EMR,
+      CSX,
+      UNP,
+      FDX,
     ]
 
   # Trading dynamics
@@ -119,19 +185,20 @@ agent:
   per_beta_start: 0.4 # IS weight start (anneals to 1.0)
   per_beta_frames: 100000
 
-# Cross-sectional rank backtest (--mode rank_backtest / kind: rank_backtest).
-# Baseline scores by the 12-1 momentum percentile; top_k names held equal-weight,
-# rebalanced monthly, costs from env.transaction_cost + env.slippage.
+# Cross-sectional ranking (--mode rank_backtest / picks). Defaults = the
+# WORKING STRATEGY promoted 2026-07-10: LambdaRank v1 on the wide universe,
+# top 10 equal-weight, turnover buffer 20 (run 6dea9161: Sharpe 1.478, beats
+# equal-weight +0.008 and SPY +0.21). Costs from env.transaction_cost + slippage.
 rank:
-  top_k: 5
+  top_k: 10
   rebalance_days: 21 # trading days between rebalances (~1 month)
   label_horizon: 21 # forward-return window for labels/IC (also the purge gap)
   test_ratio: 0.4 # trailing share of dates tiled by the test folds
-  score_feature: "mom_12_1" # any of the CROSS_FEATURES in data/cross_features.py
+  score_feature: "mom_12_1" # heuristic fallback score (model: "momentum" only)
   benchmark_ticker: "SPY"
-  model: "momentum" # "momentum" (heuristic score) | "lambdarank" (LightGBM ranker per fold)
+  model: "lambdarank" # "momentum" (heuristic score) | "lambdarank" (LightGBM ranker per fold)
   label_bins: 4 # per-date fwd-return quantile grades for the ranker
-  feature_set: "v1" # "v1" (7 base signals) | "v2" (+ vol-adj mom, 52w-high, up-ratio, sector ranks)
+  feature_set: "v1" # "v1" (7 base signals) | "v2" (+ vol-adj mom, 52w-high, up-ratio, sector ranks) — v2 rejected (0419ac6b)
   # Phase-5 portfolio rules. buffer_k 20 promoted 2026-07-07: run 6dea9161
   # (wide top-10 + buffer) Sharpe 1.478 — first strategy to beat equal-weight
   # (+0.008) AND SPY (+0.21). inverse_vol (2cebb413: 1.345) and dd_brake
