@@ -40,6 +40,7 @@ def main() -> None:
     parser.add_argument("--override", type=str, default=None, help="Path to a YAML override file deep-merged on top of --config.")
     parser.add_argument("--run-id", type=str, default=None, dest="run_id", help="Human-readable run name (auto-generated if omitted).")
     parser.add_argument("--refresh-data", action="store_true", dest="refresh_data", help="Bypass the on-disk data cache and re-download.")
+    parser.add_argument("--capital", type=float, default=None, help="Current account value for --mode picks position sizing (defaults to env.initial_cash).")
     args = parser.parse_args()
 
     cfg = load_config(args.config, override_path=args.override)
@@ -74,7 +75,7 @@ def main() -> None:
         return
 
     if args.mode == "picks":
-        generate_picks(cfg, out_dir=out_dir)
+        generate_picks(cfg, out_dir=out_dir, capital=args.capital)
         return
 
     if args.mode == "deploy":
