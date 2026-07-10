@@ -95,6 +95,29 @@ def test_inverse_vol_tilts_to_calm_name(closes):
     assert iv[-1] > eq[-1]
 
 
+def test_sector_cap_limits_same_sector_names():
+    """Real-map tickers: with cap 1, only one semiconductor name can be held."""
+    dates = pd.date_range("2021-01-01", periods=40, freq="B")
+    closes = pd.DataFrame(
+        {"NVDA": 100.0 + np.arange(40), "AMD": 100.0 + np.arange(40), "JPM": 100.0 + np.arange(40)},
+        index=dates,
+    )
+    rows = []
+    for d in dates:
+        for t, s in [("NVDA", 3.0), ("AMD", 2.0), ("JPM", 1.0)]:
+            rows.append({"date": d, "ticker": t, "score": s})
+    panel = pd.DataFrame(rows)
+
+    from ai_trader.training.portfolio_sim import _select_holdings
+
+    scores = panel[panel["date"] == dates[0]].set_index("ticker")["score"]
+    capped = _select_holdings(scores, [], _rules(top_k=2, sector_cap=1))
+    # NVDA and AMD are both "tech": cap 1 forces JPM (financials) into slot 2.
+    assert capped == ["NVDA", "JPM"]
+    uncapped = _select_holdings(scores, [], _rules(top_k=2))
+    assert uncapped == ["NVDA", "AMD"]
+
+
 def test_dd_brake_cuts_exposure_in_decline(closes):
     braked = simulate_rank_portfolio(
         closes, _scores(closes, "DOWN"), _rules(rebalance_days=5, dd_brake=0.05)

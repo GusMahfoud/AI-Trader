@@ -21,6 +21,8 @@ from typing import Dict, List, Optional
 import numpy as np
 import pandas as pd
 
+from ai_trader.data.sectors import sector_of
+
 BRAKE_SCALE = 0.5
 
 
@@ -34,21 +36,40 @@ class PortfolioRules:
     buffer_k: int = 0                  # 0 = off; else keep incumbents while rank <= buffer_k
     weighting: str = "equal"           # "equal" | "inverse_vol"
     dd_brake: float = 0.0              # 0 = off; else drawdown fraction that halves exposure
+    sector_cap: int = 0                # 0 = off; else max holdings per sector bucket
 
 
 def _select_holdings(
     scores: pd.Series, held: List[str], rules: PortfolioRules
 ) -> List[str]:
-    """Top-K selection with an optional incumbency buffer."""
+    """Top-K selection with an optional incumbency buffer and per-sector cap."""
     ranked = list(scores.dropna().sort_values(ascending=False).index)
     if rules.top_k is None:
         return ranked
+
     if rules.buffer_k > rules.top_k:
         buffer_zone = set(ranked[: rules.buffer_k])
         keep = [t for t in held if t in buffer_zone]
-        fresh = [t for t in ranked if t not in keep]
-        return (keep + fresh)[: rules.top_k]
-    return ranked[: rules.top_k]
+        ordered = keep + [t for t in ranked if t not in keep]
+    else:
+        ordered = ranked
+
+    if rules.sector_cap <= 0:
+        return ordered[: rules.top_k]
+
+    # Fill top-K in order, skipping names whose sector already hit the cap.
+    # May hold fewer than top_k names when the universe is sector-thin.
+    selected: List[str] = []
+    counts: Dict[str, int] = {}
+    for ticker in ordered:
+        if len(selected) == rules.top_k:
+            break
+        sector = sector_of(str(ticker))
+        if counts.get(sector, 0) >= rules.sector_cap:
+            continue
+        selected.append(ticker)
+        counts[sector] = counts.get(sector, 0) + 1
+    return selected
 
 
 def _target_weights(
