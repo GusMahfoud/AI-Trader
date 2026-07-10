@@ -45,6 +45,7 @@ def _rank_cfg(cfg: Dict[str, Any]) -> Dict[str, Any]:
     rank.setdefault("buffer_k", 0)
     rank.setdefault("weighting", "equal")
     rank.setdefault("dd_brake", 0.0)
+    rank.setdefault("sector_cap", 0)
     return rank
 
 
@@ -129,6 +130,7 @@ def rank_backtest(cfg: Dict[str, Any], out_dir: str) -> None:
             buffer_k=int(rank["buffer_k"]),
             weighting=str(rank["weighting"]),
             dd_brake=float(rank["dd_brake"]),
+            sector_cap=int(rank["sector_cap"]),
         )
         ew_rules = PortfolioRules(
             top_k=None, rebalance_days=int(rank["rebalance_days"]), cost_rate=cost_rate

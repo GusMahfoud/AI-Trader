@@ -137,6 +137,7 @@ class RankSpec(BaseModel):
     buffer_k: int = Field(default=0, ge=0)
     weighting: Literal["equal", "inverse_vol"] = "equal"
     dd_brake: float = Field(default=0.0, ge=0.0, lt=1.0)
+    sector_cap: int = Field(default=0, ge=0)
 
 
 class ModelSpec(BaseModel):

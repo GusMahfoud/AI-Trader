@@ -206,6 +206,7 @@ rank:
   buffer_k: 20 # keep incumbents while ranked <= buffer_k (0 = off)
   weighting: "equal" # "equal" | "inverse_vol" (capital proportional to 1/vol_60)
   dd_brake: 0.0 # halve exposure while drawdown from peak exceeds this fraction
+  sector_cap: 0 # max holdings per sector (0 = off; under validation, see rank_p5_seccap)
 
 training:
   seed: 42
