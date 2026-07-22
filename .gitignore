@@ -29,10 +29,9 @@ archived_results/
 # Per-run results (large files) and local experiment overrides
 results/
 
-IMPROVEMENT_PLAN.md
-PLATFORM_PLAN.md
-METRICS_GUIDE.md
-PAPER_TRADING.md
+# Private working docs (plans, metrics guide, paper-trading manual + results)
+docs/
+CLAUDE.md
 
 # Personal paper-trading records (written by --mode picks)
 paper_trading/
