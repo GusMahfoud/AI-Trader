@@ -12,6 +12,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict, Optional
 
+import numpy as np
 import pandas as pd
 
 from ai_trader.data.cross_features import build_cross_features, model_feature_columns, rank_col
@@ -41,6 +42,29 @@ def _append_paper_log(out: pd.DataFrame, log_path: Path) -> None:
     else:
         log = out
     log.to_csv(log_path, index=False)
+
+
+def _whole_share_allocation(
+    weights: np.ndarray, prices: np.ndarray, capital: float
+) -> np.ndarray:
+    """Integer shares per pick, total cost <= capital, as close to it as possible.
+
+    Floor each pick's weighted target to whole shares, then repeatedly sweep the
+    picks in rank order adding one share wherever the remaining cash covers the
+    price, until nothing fits. Never exceeds capital; leftover is smaller than
+    the cheapest pick's price.
+    """
+    shares = np.floor(weights * capital / prices).astype(int)
+    leftover = capital - float((shares * prices).sum())
+    while True:
+        added = False
+        for i in range(len(prices)):
+            if prices[i] <= leftover:
+                shares[i] += 1
+                leftover -= float(prices[i])
+                added = True
+        if not added:
+            return shares
 
 
 def generate_picks(
@@ -86,7 +110,8 @@ def generate_picks(
     )
     w = weights.reindex(picks.index).to_numpy()
     closes = picks["close"].to_numpy()
-    dollars = w * cash
+    shares = _whole_share_allocation(w, closes, cash)
+    cost = (shares * closes).round(2)
 
     out = pd.DataFrame(
         {
@@ -97,8 +122,8 @@ def generate_picks(
             "score": picks["score"].to_numpy(),
             "weight": w,
             "close": closes,
-            "target_dollars": dollars.round(2),
-            "shares": (dollars / closes).round(2),
+            "shares": shares,
+            "cost": cost,
         }
     )
 
@@ -112,7 +137,11 @@ def generate_picks(
     for row in out.itertuples(index=False):
         logger.info(
             f"  #{row.rank:02d} {row.ticker:6s} {row.name:<28s} weight={row.weight:.3f} "
-            f"close={row.close:9.2f}  buy ${row.target_dollars:>9,.2f} (~{row.shares} sh)"
+            f"close={row.close:9.2f}  buy {row.shares:>4d} sh = ${row.cost:>9,.2f}"
         )
+    invested = float(out["cost"].sum())
+    logger.info(
+        f"Total invested: ${invested:,.2f} of ${cash:,.2f} (uninvested cash: ${cash - invested:,.2f})"
+    )
     logger.info(f"Saved picks: {path} | appended to {PAPER_LOG_PATH}")
     return out

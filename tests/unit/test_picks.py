@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import numpy as np
 import pandas as pd
 import pytest
 
-from ai_trader.training.picks import generate_picks
+from ai_trader.training.picks import _whole_share_allocation, generate_picks
 
 
 @pytest.fixture
@@ -35,10 +36,27 @@ def test_picks_momentum(picks_config, tmp_path, monkeypatch):
     assert (tmp_path / "picks.csv").exists()
     # Scores must be ranked descending.
     assert out["score"].is_monotonic_decreasing
-    # Position sizing: dollars = weight * capital; shares = dollars / close.
-    assert out["target_dollars"].sum() == pytest.approx(20_000, rel=1e-3)
-    row = out.iloc[0]
-    assert row["shares"] == pytest.approx(row["target_dollars"] / row["close"], rel=1e-2)
+    # Whole-share sizing: integer shares, total cost <= capital, leftover
+    # smaller than the cheapest pick (nothing more could have been bought).
+    assert (out["shares"] == out["shares"].astype(int)).all()
+    invested = out["cost"].sum()
+    assert invested <= 20_000
+    assert 20_000 - invested < out["close"].min()
+
+
+def test_whole_share_allocation_math():
+    weights = np.array([0.5, 0.5])
+    prices = np.array([300.0, 70.0])
+    shares = _whole_share_allocation(weights, prices, capital=1000.0)
+    cost = float((shares * prices).sum())
+    assert shares.dtype.kind == "i"
+    assert cost <= 1000.0
+    assert 1000.0 - cost < prices.min()  # leftover can't buy anything else
+
+
+def test_whole_share_allocation_price_above_capital():
+    shares = _whole_share_allocation(np.array([1.0]), np.array([5000.0]), capital=1000.0)
+    assert list(shares) == [0]
 
 
 def test_picks_appends_paper_log(picks_config, tmp_path, monkeypatch):
@@ -48,7 +66,7 @@ def test_picks_appends_paper_log(picks_config, tmp_path, monkeypatch):
 
     log = pd.read_csv(tmp_path / "paper_trading" / "picks_log.csv")
     assert len(log) == 3
-    assert set(["as_of", "ticker", "weight", "target_dollars", "shares"]) <= set(log.columns)
+    assert set(["as_of", "ticker", "weight", "shares", "cost"]) <= set(log.columns)
 
 
 def test_picks_lambdarank_inverse_vol(picks_config, tmp_path, monkeypatch):
