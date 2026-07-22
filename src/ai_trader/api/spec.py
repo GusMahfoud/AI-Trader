@@ -31,6 +31,8 @@ class EnvSpec(BaseModel):
     val_ratio: float = Field(default=0.15, gt=0.0, lt=1.0)
 
     extra_features: List[RegimeFeature] = Field(default_factory=list)
+    universe: List[str] = Field(default_factory=list)
+    auto_adjust: bool = False
 
     initial_cash: float = Field(default=10_000.0, gt=0.0)
     transaction_cost: float = Field(default=0.0003, ge=0.0)
@@ -118,6 +120,26 @@ class TrainingSpec(BaseModel):
     n_splits: int = Field(default=4, ge=2)
 
 
+class RankSpec(BaseModel):
+    """Cross-sectional rank-backtest settings (universe top-K strategies)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    top_k: int = Field(default=5, ge=1)
+    rebalance_days: int = Field(default=21, ge=1)
+    label_horizon: int = Field(default=21, ge=1)
+    test_ratio: float = Field(default=0.4, gt=0.0, lt=1.0)
+    score_feature: str = "mom_12_1"
+    benchmark_ticker: str = "SPY"
+    model: Literal["momentum", "lambdarank"] = "momentum"
+    label_bins: int = Field(default=4, ge=2, le=10)
+    feature_set: Literal["v1", "v2"] = "v1"
+    buffer_k: int = Field(default=0, ge=0)
+    weighting: Literal["equal", "inverse_vol"] = "equal"
+    dd_brake: float = Field(default=0.0, ge=0.0, lt=1.0)
+    sector_cap: int = Field(default=0, ge=0)
+
+
 class ModelSpec(BaseModel):
     """Top-level model contract — the shape the frontend posts and workers consume."""
 
@@ -127,6 +149,7 @@ class ModelSpec(BaseModel):
     env: EnvSpec = Field(default_factory=EnvSpec)
     agent: AgentSpec = Field(default_factory=AgentSpec)
     training: TrainingSpec = Field(default_factory=TrainingSpec)
+    rank: RankSpec = Field(default_factory=RankSpec)
 
     @classmethod
     def from_config(cls, cfg: Dict[str, Any]) -> "ModelSpec":

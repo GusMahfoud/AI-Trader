@@ -1,237 +1,102 @@
-# AI Trader — Double DQN Stock Trading Agent
+# AI Trader — a 10-Best-Stocks Picker
 
-<!-- Replace OWNER/REPO once the GitHub repo exists. -->
-[![tests](https://github.com/OWNER/REPO/actions/workflows/tests.yml/badge.svg)](https://github.com/OWNER/REPO/actions/workflows/tests.yml)
+[![tests](https://github.com/GusMahfoud/AI-Trader/actions/workflows/tests.yml/badge.svg)](https://github.com/GusMahfoud/AI-Trader/actions/workflows/tests.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 
-Trains a **Double DQN** reinforcement-learning agent to trade AAPL using historical market data, and ships with a Streamlit dashboard for inspecting the trained policy.
+A machine-learning stock ranker. Once a month it scores a fixed universe of
+~112 liquid US large caps, picks the **10 best**, and tells you exactly what to
+buy and in what dollar amounts. Built as a research project with an emphasis on
+honest evaluation: purged walk-forward validation, transaction costs included,
+and every strategy change gated on beating both an equal-weight portfolio and
+SPY before adoption.
 
-Actions: `0 = hold`, `1 = sell`, `2 = buy`. Reward = scaled portfolio return − risk/position/inactivity penalties.
+> **Not financial advice.** This is a research codebase. Backtests carry a
+> documented survivorship bias (the universe is a fixed list of names that
+> exist today) and past performance means nothing anyway.
 
----
+## How the 10 picks are chosen
 
-## 1. Install Miniconda
+1. **Data** — daily OHLCV for every universe ticker via yfinance
+   (split/dividend-adjusted), cached locally as Parquet.
+2. **Features** — per stock, per day: momentum over 1/3/12 months (the 12-month
+   signal skips the most recent month, the classic "12-1" convention),
+   short-term reversal, realized volatility, and dollar-volume liquidity. Each
+   feature is then converted to a **percentile across the universe that day**,
+   so stocks are directly comparable and no scaler can leak future statistics.
+3. **Model** — a LightGBM **LambdaRank** learning-to-rank model, trained to
+   order stocks within each date by their next-month return quantile. Ranking
+   relative order is more robust than predicting absolute returns.
+4. **Portfolio** — hold the top 10 equal-weight, rebalance monthly, with a
+   turnover buffer: an existing holding is kept while it stays in the top 20,
+   which roughly halves trading costs at minor signal cost.
+5. **Output** — `--mode picks` trains on all available history, scores the
+   latest close, and prints tickers, company names, weights, and dollar/share
+   amounts sized to your account value. Each run is appended to a local log.
 
-1. Download the installer: <https://www.anaconda.com/docs/getting-started/miniconda/install>
-   - Windows: grab the **64-bit Python 3** `.exe`. The base Python version doesn't matter — the env file pins 3.10 separately.
-2. Run the installer. On Windows: *Install for: Just Me*, skip "Add to PATH" — use **Anaconda Prompt** instead.
-3. Confirm it works:
-   ```bash
-   conda --version
-   ```
+Validation runs the same pipeline through **purged walk-forward folds**
+(training rows whose forward-return label window would touch the test period
+are dropped), against two benchmarks on identical dates and costs: the
+equal-weight universe and SPY buy-and-hold. Signal quality is tracked with
+rank information coefficient (IC), NDCG@K, and top-minus-bottom spread.
 
-Already have Anaconda or Miniforge? Both work.
-
----
-
-## 2. Setup
-
-Run from the project root in Anaconda Prompt.
-
-```bash
-# Create + activate the environment
-conda env create -f environment.yml
-conda activate ai-trader
-
-# Register the ai_trader package
-pip install -e .
-
-# Sanity check
-python -c "import torch, gymnasium, streamlit; print('OK')"
-```
-
----
-
-## 3. Training
+## Quickstart
 
 ```bash
-# Basic run — results saved to results/YYYYMMDD_HHMMSS/
-python -m ai_trader --mode train
-
-# Named run — results saved to results/my_run/
-python -m ai_trader --mode train --run-id my_run
-
-# Override specific hyperparameters without editing config.yaml
-python -m ai_trader --mode train --run-id high_lr --override experiments/high_lr.yaml
-```
-
-Each run writes a self-contained directory:
-
-```
-results/my_run/
-├── config.yaml          # exact config snapshot
-├── checkpoints/
-│   ├── double_dqn_best.pt
-│   └── double_dqn_latest.pt
-├── plots/
-│   ├── reward_plot.png
-│   └── ...
-├── episode_rewards.csv
-├── episode_losses.csv
-├── episode_lengths.csv
-└── episode_epsilons.csv
-```
-
----
-
-## 4. Evaluation
-
-```bash
-# Compare DDQN vs Random vs Buy & Hold on the test split
-python -m ai_trader --mode compare \
-  --checkpoint results/my_run/checkpoints/double_dqn_best.pt \
-  --split test --episodes 10 --seeds 42
-
-# Run the trained agent and save a dashboard plot
-python -m ai_trader --mode deploy \
-  --checkpoint results/my_run/checkpoints/double_dqn_best.pt \
-  --split test --episodes 5 --seeds 42,43,44
-```
-
----
-
-## 5. Dashboard
-
-```bash
-streamlit run scripts/demo_app.py
-```
-
-Three pages: Live Agent Replay (scrub through trades with a slider), Agent vs Buy & Hold race, and an interactive Hyperparameter Explorer.
-
----
-
-## 6. Configuration
-
-All hyperparameters live in [`config.yaml`](config.yaml). Common changes:
-
-| Key | Default | Purpose |
-|---|---|---|
-| `device` | `"cuda"` | `"auto"`, `"cuda"`, or `"cpu"` |
-| `env.data_source` | `"yfinance"` | `"yfinance"`, `"csv"`, or `"synthetic"` |
-| `env.ticker` | `"AAPL"` | Any yfinance-supported ticker |
-| `training.episodes` | `5000` | Total training episodes |
-| `training.eval_every` | `20` | Validate and checkpoint every N episodes |
-
-To run a quick experiment without touching `config.yaml`, create a small override file:
-
-```yaml
-# experiments/fast_dev.yaml
-env:
-  data_source: "synthetic"
-training:
-  episodes: 100
-  eval_every: 10
-```
-
-```bash
-python -m ai_trader --mode train --run-id fast_dev --override experiments/fast_dev.yaml
-```
-
----
-
-## 7. GPU Training
-
-The env file installs **CUDA 12.1** PyTorch by default. Verify after setup:
-
-```bash
-python -c "import torch; print('CUDA:', torch.cuda.is_available())"
-```
-
-**Driver too old (< 528.33 on Windows)?** Edit [`environment.yml`](environment.yml), change `pytorch-cuda=12.1` to `pytorch-cuda=11.8`, then:
-
-```bash
-conda deactivate
-conda env remove -n ai-trader
 conda env create -f environment.yml
 conda activate ai-trader
 pip install -e .
+
+pytest                                   # offline, synthetic data, ~20s
+
+# Today's top 10 (first run downloads ~112 tickers, then cached)
+python -m ai_trader --mode picks --refresh-data --capital 10000
+
+# Walk-forward backtest of the ranking strategy vs benchmarks
+python -m ai_trader --mode rank_backtest
 ```
 
-**No GPU?** Set `device: "cpu"` in `config.yaml` and remove the `pytorch-cuda` line from `environment.yml`.
+Experiment variants live in `experiments/*.yaml` and deep-merge over
+`config.yaml` via `--override`. Long runs can also be queued to a Postgres
+job table and executed by `python -m ai_trader.jobs.worker` (see
+`.env.example`).
 
----
-
-## 8. Tests
-
-Runs fully offline using synthetic data, finishes in seconds.
-
-```bash
-pytest
-pytest tests/test_env.py          # single file
-pytest -k replay_buffer           # by keyword
-```
-
----
-
-## 9. Project Structure
+## Repository layout
 
 ```
-AI Trader/
-├── config.yaml                    # all hyperparameters
-├── environment.yml                # conda env spec
-├── pyproject.toml                 # package metadata
-│
-├── src/ai_trader/
-│   ├── agents/
-│   │   └── double_dqn.py          # DDQN + build_agent factory
-│   ├── data/                      # data pipeline
-│   │   ├── loader.py              #   CSV / yfinance / synthetic loading
-│   │   ├── features.py            #   RSI, SMA/EMA, momentum indicators
-│   │   ├── splits.py              #   chronological train/val/test split
-│   │   └── bundle.py              #   DataBundle + build_data_bundle
-│   ├── env/
-│   │   └── trading_env.py         # Gymnasium env + portfolio accounting
-│   ├── models/
-│   │   ├── q_network.py           # MLP Q-network
-│   │   └── replay_buffer.py       # pre-allocated numpy ring buffer
-│   ├── training/
-│   │   ├── train.py               # training loop
-│   │   ├── deploy.py              # single-agent eval
-│   │   ├── compare.py             # DDQN vs Random vs B&H
-│   │   ├── evaluate.py            # rollouts, metrics, summaries
-│   │   └── logger.py              # CSV metric logger
-│   ├── viz/
-│   │   ├── style.py               # shared dark theme
-│   │   ├── training_plots.py      # training-curve charts
-│   │   └── comparison_plots.py    # deployment dashboard + comparison bars
-│   └── utils/
-│       ├── config.py              # YAML loader + deep_merge
-│       ├── run.py                 # make_run_id
-│       ├── checkpoint.py          # save/load
-│       ├── seeding.py             # set_seed
-│       └── torch_utils.py         # device, tensor helpers, Polyak updates
-│
-├── app/                           # Streamlit dashboard package
-│   ├── helpers.py                 # cached loaders + episode runner
-│   └── pages/
-│       ├── replay.py              # Live Agent Replay page
-│       ├── race.py                # Agent vs Buy & Hold page
-│       └── explorer.py            # Hyperparameter Explorer page
-│
-├── scripts/                       # thin entry-points
-│   ├── demo_app.py                # streamlit run target
-│   ├── train.py
-│   ├── check_actions.py
-│   └── gen_plots.py               # rebuild plots: --run-dir results/my_run
-│
-├── results/                       # one subdirectory per run (gitignored)
-│
-└── tests/
-    ├── unit/
-    ├── integration/
-    └── conftest.py
+src/ai_trader/
+├── data/          # loaders, Parquet cache, cross-sectional features,
+│                  # forward-return labels, purged walk-forward splits,
+│                  # universe + sector/name metadata
+├── models/        # LambdaRank scorer (+ legacy DQN networks/replay buffers)
+├── training/      # rank_backtest, portfolio simulator, picks command,
+│                  # DQN train/eval/walk-forward, report.json builders
+├── risk/          # Sharpe/Sortino/Calmar/VaR + IC/NDCG signal metrics
+├── env/           # legacy Gymnasium trading env (single-asset DQN track)
+├── agents/        # legacy Double-DQN agent
+├── jobs/          # Postgres-backed job queue + worker
+├── api/           # config contract (pydantic) + FastAPI skeleton
+├── viz/           # matplotlib/plotly chart helpers
+└── utils/         # config merge, logging, seeding, run ids
+app/               # Streamlit dashboard
+experiments/       # one-hypothesis YAML overrides, gates documented in-file
+scripts/           # thin CLI entry points (enqueue runs, demo app)
+tests/             # unit + integration; all offline via synthetic fixtures
+config.yaml        # single source of truth for every parameter
 ```
 
----
+The `env/` + `agents/` DQN track is the project's first phase — a Double-DQN
+agent trading a single ticker. It validated the evaluation harness but never
+beat buy-and-hold after honest measurement, which is what motivated the pivot
+to cross-sectional ranking. It is kept frozen as a reference.
 
-## 10. Troubleshooting
+## Development principles
 
-| Issue | Fix |
-|---|---|
-| `conda: command not found` | Use **Anaconda Prompt**, or re-run installer with *Add to PATH* |
-| `ModuleNotFoundError: ai_trader` | Run `pip install -e .` inside the activated env |
-| Agent only holds | Check `reward_scale` and `inactivity_penalty` in `config.yaml` are non-zero |
-| `device=cuda requested but not available` | See section 7 — driver too old or `pytorch-cuda` not installed |
-| yfinance download fails | Set `env.data_source: "synthetic"` for offline runs |
-| Dashboard can't find checkpoints | Train first — `.pt` files are gitignored; point the sidebar to the correct run dir |
+- **One hypothesis per experiment**, with the hypothesis and a pre-committed
+  decision gate written in the experiment file before the run.
+- **No look-ahead**: features are backward-looking percentiles, labels are
+  purged at fold boundaries, normalization never sees test data.
+- **Costs always on**: every backtest pays transaction costs and slippage.
+- **Negative results are kept**, in config comments and experiment files —
+  rejected ideas stay documented so they don't get retried by accident.
+- 300-line soft / 1000-line hard file limits, type hints, tests per module.

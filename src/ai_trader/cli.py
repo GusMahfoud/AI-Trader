@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from datetime import date
 from pathlib import Path
 from typing import List
 
@@ -16,7 +17,7 @@ try:
 except ImportError:
     pass
 
-from .training import compare, deploy, train, walk_forward
+from .training import compare, deploy, generate_picks, rank_backtest, train, walk_forward
 from .utils import ensure_dir, get_logger, load_config, make_run_id, set_seed
 
 logger = get_logger(__name__)
@@ -31,7 +32,7 @@ def _parse_seeds(raw: str) -> List[int]:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Train/deploy/compare the Double DQN trading agent.")
-    parser.add_argument("--mode", choices=["train", "deploy", "compare", "walk_forward"], default="train")
+    parser.add_argument("--mode", choices=["train", "deploy", "compare", "walk_forward", "rank_backtest", "picks"], default="train")
     parser.add_argument("--checkpoint", type=str, default=None, help="Checkpoint path for deploy/compare.")
     parser.add_argument("--split", choices=["train", "val", "test"], default="test")
     parser.add_argument("--episodes", type=int, default=5, help="Episodes for deploy/compare evaluation.")
@@ -40,6 +41,7 @@ def main() -> None:
     parser.add_argument("--override", type=str, default=None, help="Path to a YAML override file deep-merged on top of --config.")
     parser.add_argument("--run-id", type=str, default=None, dest="run_id", help="Human-readable run name (auto-generated if omitted).")
     parser.add_argument("--refresh-data", action="store_true", dest="refresh_data", help="Bypass the on-disk data cache and re-download.")
+    parser.add_argument("--capital", type=float, default=None, help="Current account value for --mode picks position sizing (defaults to env.initial_cash).")
     args = parser.parse_args()
 
     cfg = load_config(args.config, override_path=args.override)
@@ -47,7 +49,10 @@ def main() -> None:
         cfg.setdefault("env", {})["refresh_data"] = True
     set_seed(int(cfg["training"]["seed"]))
 
-    run_id = make_run_id(args.run_id)
+    # Picks runs get a short date-only folder (picks_2026_07_10) — one per day,
+    # re-running the same day overwrites, matching the paper-log semantics.
+    default_id = f"picks {date.today().isoformat()}" if args.mode == "picks" else None
+    run_id = make_run_id(args.run_id or default_id)
     if Path(f"results/{run_id}").exists():
         logger.warning("results/%s already exists — its contents will be overwritten.", run_id)
     out_dir = ensure_dir(f"results/{run_id}")
@@ -67,6 +72,14 @@ def main() -> None:
 
     if args.mode == "walk_forward":
         walk_forward(cfg, out_dir=out_dir)
+        return
+
+    if args.mode == "rank_backtest":
+        rank_backtest(cfg, out_dir=out_dir)
+        return
+
+    if args.mode == "picks":
+        generate_picks(cfg, out_dir=out_dir, capital=args.capital)
         return
 
     if args.mode == "deploy":

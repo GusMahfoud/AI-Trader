@@ -1,0 +1,13 @@
+# Env battery — de-shaping ladder, rung 2: LEAN reward (return + risk_penalty +
+# underexposure_penalty; inactivity and position penalties off). Hypothesis: the
+# position penalty directly opposes the underexposure penalty (they are opposing
+# linear terms in pos_frac) and the inactivity penalty is redundant once idle
+# capital is charged — dropping both should match or beat the champion (rung 3 =
+# full stack, run fe0641b3). Also fixes the non-Markov hold_streak reward term.
+# Extended protocol, one hypothesis delta.
+env:
+  start_date: "2005-01-01"
+  position_penalty: 0.0
+  inactivity_penalty: 0.0
+training:
+  n_splits: 8

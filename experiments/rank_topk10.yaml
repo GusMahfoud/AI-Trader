@@ -1,0 +1,14 @@
+# Cross-sectional pivot Phase 4c — LambdaRank v1 with top_k 10.
+# The v1 top-5 run (9b4fae0a: Sharpe 1.32, beats SPY 4/6) trails equal-weight
+# (1.42) largely on concentration: 5 names carry ~40% more drawdown than 50.
+# Hypothesis: doubling breadth to 10 keeps most of the selection edge while
+# diluting single-name risk. One delta vs rank_lambdarank.yaml.
+# Decision gate (pre-committed): adopt if Sharpe > 1.32 with drawdown no worse
+# than the top-5 run's -15.7%.
+env:
+  start_date: "2010-01-01"
+training:
+  n_splits: 6
+rank:
+  model: "lambdarank"
+  top_k: 10

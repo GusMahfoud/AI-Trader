@@ -1,0 +1,13 @@
+# Env battery — de-shaping ladder, rung 0: RAW reward (pure scaled step return,
+# all four penalties off). Control arm: measures what the shaping stack buys at
+# all. The per-step penalties (~0.005) are 2-3 orders of magnitude below return
+# noise (~1.5), so their gradient signal is weak by construction; if raw matches
+# the champion, shaping is dead weight. Extended protocol, one hypothesis delta.
+env:
+  start_date: "2005-01-01"
+  risk_penalty: 0.0
+  position_penalty: 0.0
+  inactivity_penalty: 0.0
+  underexposure_penalty: 0.0
+training:
+  n_splits: 8

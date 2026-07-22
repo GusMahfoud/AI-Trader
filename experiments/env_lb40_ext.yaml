@@ -1,0 +1,10 @@
+# Env battery — observation: lookback_window 40 (two trading months of context,
+# doubles the market slice of the state to 40x11 + 4). Hypothesis: the failing
+# folds are regime transitions the 20-day window is too short to identify.
+# Cost: bigger input layer, slower training. Compare against env_lb10_ext for
+# a 3-point window curve (10 / 20 / 40). Extended protocol, one delta.
+env:
+  start_date: "2005-01-01"
+  lookback_window: 40
+training:
+  n_splits: 8

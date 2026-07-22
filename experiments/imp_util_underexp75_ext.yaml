@@ -1,0 +1,11 @@
+# Capital-utilization dose-response 1 — underexposure_penalty 0.0075, EXTENDED
+# protocol (AAPL, 2005 start, 8 folds). At 0.005 the penalty moved return capture
+# 59% -> 73% vs the champion baseline (1db69ce4) while GROWING the drawdown edge
+# to 5.2pts (run fe0641b3). This tests whether a stronger dose closes the gap to
+# the 85% promotion gate. Stop condition: Calmar below B&H or drawdown edge < 2pts
+# means the lever is saturating. One delta from the extended champion base.
+env:
+  start_date: "2005-01-01"
+  underexposure_penalty: 0.0075
+training:
+  n_splits: 8

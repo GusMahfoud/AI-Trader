@@ -1,0 +1,28 @@
+# Cross-sectional pivot Phase 4d — LambdaRank v1 on a WIDE universe (113 names).
+# Hypothesis: breadth is the root-cause fix — more names per date means more
+# independent bets and a stronger, more stable cross-sectional signal (and a
+# less concentration-inflated equal-weight benchmark). Universe extends the
+# frozen 50 with 63 more liquid names that existed pre-2010 (same survivorship
+# caveat as data/universe.py; sector map extended in data/sectors.py).
+# One hypothesis delta vs rank_lambdarank.yaml: the universe.
+# Decision gate (pre-committed): adopt if ic_mean >= 0.03 OR Sharpe > 1.32
+# with >= 4/6 folds beating SPY.
+env:
+  start_date: "2010-01-01"
+  universe:
+    [AAPL, MSFT, GOOGL, AMZN, JPM, BAC, WFC, GS, MS, C,
+     USB, JNJ, PFE, MRK, ABT, BMY, LLY, AMGN, UNH, XOM,
+     CVX, COP, SLB, PG, KO, PEP, WMT, COST, HD, MCD,
+     NKE, MO, CL, T, VZ, CSCO, INTC, ORCL, IBM, TXN,
+     QCOM, ADP, GE, CAT, MMM, BA, HON, UPS, DIS, AXP,
+     ADBE, AMD, NVDA, MU, HPQ, AMAT, ADI, INTU, EBAY, EA,
+     BLK, SCHW, BK, PNC, COF, MET, PRU, AIG, ALL, TRV,
+     TMO, DHR, MDT, SYK, BSX, GILD, CI, CVS, HUM, BDX,
+     OXY, EOG, HAL, DVN, FCX, NEM, NUE, APD,
+     GIS, K, SYY, KR, TJX, ROST, YUM, SBUX, TGT, LOW,
+     SO, DUK, D, EXC, AEP, NEE, ED,
+     LMT, NOC, GD, DE, EMR, CSX, UNP, FDX]
+training:
+  n_splits: 6
+rank:
+  model: "lambdarank"

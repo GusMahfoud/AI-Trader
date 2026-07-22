@@ -29,9 +29,12 @@ archived_results/
 # Per-run results (large files) and local experiment overrides
 results/
 
-Improvement_plan.md
-PLATFORM_PLAN.md
-CAPITAL_UTILIZATION_FUTURE.md
-METRICS_GUIDE.md
+# Private working docs (plans, metrics guide, paper-trading manual + results)
+docs/
+CLAUDE.md
 
-data/
+# Personal paper-trading records (written by --mode picks)
+paper_trading/
+
+# Downloaded market data / parquet cache (root-level only — NOT src/ai_trader/data!)
+/data/

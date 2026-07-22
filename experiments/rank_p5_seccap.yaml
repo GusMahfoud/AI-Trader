@@ -1,0 +1,12 @@
+# Phase 5e — per-sector cap on the working strategy (config defaults = wide
+# top-10 LambdaRank + buffer 20, run 6dea9161: Sharpe 1.478, max DD -16.9%).
+# Motivation: live picks on 2026-07-09 held 8/10 semiconductor/hardware names —
+# the 10-name book is one sector bet in disguise. Cap 4 forces at least three
+# sector buckets into the book. One delta vs config defaults.
+# Gate (pre-committed): adopt if Sharpe >= 1.478, OR max drawdown improves by
+# >= 3pts with Sharpe >= 1.43. If Sharpe collapses, concentration IS the alpha
+# and the cap stays off — paper-trade the uncapped strategy as validated.
+training:
+  n_splits: 6
+rank:
+  sector_cap: 4
