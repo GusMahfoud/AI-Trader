@@ -21,6 +21,11 @@ dependencies = [
     "plotly",
     "lightgbm",
     "scikit-learn", # required by lightgbm.sklearn (LGBMRanker)
+    "pydantic",
+    "fastapi",
+    "uvicorn",
+    "httpx", # starlette TestClient backend
+    "psycopg[binary]",
 ]
 
 [project.optional-dependencies]
