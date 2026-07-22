@@ -1,0 +1,80 @@
+# Canadian-market option — the working strategy (LambdaRank v1, top 10,
+# buffer 20) on a TSX large-cap universe, benchmarked against XIU.TO
+# (S&P/TSX 60 ETF, CAD). All prices CAD so no FX mixing. Same survivorship
+# caveat as the US universe (names chosen as of ~2010 that survived; class-B
+# tickers that fail to download are dropped with a warning).
+# VALIDATION GATE (pre-committed): the TSX has ~half the breadth of the wide
+# US universe and heavy financials/energy concentration, so demand the same
+# standard — ic_mean >= 0.03 AND Sharpe beats BOTH equal-weight and XIU.TO —
+# before Canadian picks are used for paper trading.
+#
+# VERDICT (run efdd91be, 2026-07-12): GATE FAILED — ic_mean 0.006 (vs 0.043
+# US), 0/6 folds beat equal-weight (EW Sharpe 1.856 vs strategy 1.460). The
+# ranking signal adds nothing on this universe; its absolute Sharpe is just
+# market beta. Breadth (54 names) is half the US universe's and the momentum
+# signal doesn't discriminate within the financials/materials-heavy TSX.
+# Canadian picks must NOT be paper-traded. Config kept for future revisits
+# (e.g. combined US+CA universe with FX handling, or TSX-specific features).
+env:
+  start_date: "2010-01-01"
+  universe:
+    [
+      RY.TO,
+      TD.TO,
+      BNS.TO,
+      BMO.TO,
+      CM.TO,
+      NA.TO,
+      MFC.TO,
+      SLF.TO,
+      GWO.TO,
+      POW.TO,
+      IFC.TO,
+      ENB.TO,
+      TRP.TO,
+      SU.TO,
+      CNQ.TO,
+      CVE.TO,
+      IMO.TO,
+      PPL.TO,
+      ARX.TO,
+      KEY.TO,
+      ABX.TO,
+      AEM.TO,
+      FNV.TO,
+      WPM.TO,
+      CCO.TO,
+      LUN.TO,
+      FM.TO,
+      K.TO,
+      CNR.TO,
+      CP.TO,
+      TFII.TO,
+      CAE.TO,
+      BBD-B.TO,
+      BCE.TO,
+      T.TO,
+      RCI-B.TO,
+      FTS.TO,
+      EMA.TO,
+      CU.TO,
+      TA.TO,
+      L.TO,
+      MRU.TO,
+      ATD.TO,
+      SAP.TO,
+      WN.TO,
+      EMP-A.TO,
+      MG.TO,
+      GIL.TO,
+      DOL.TO,
+      CTC-A.TO,
+      CSU.TO,
+      OTEX.TO,
+      GIB-A.TO,
+      BB.TO,
+    ]
+training:
+  n_splits: 6
+rank:
+  benchmark_ticker: "XIU.TO"
