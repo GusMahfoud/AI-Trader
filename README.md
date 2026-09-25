@@ -1,7 +1,7 @@
 # AI Trader — a 10-Best-Stocks Picker
 
 [![tests](https://github.com/GusMahfoud/AI-Trader/actions/workflows/tests.yml/badge.svg)](https://github.com/GusMahfoud/AI-Trader/actions/workflows/tests.yml)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![License: Proprietary](https://img.shields.io/badge/license-proprietary%20%2F%20source--available-red.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 
 A machine-learning stock ranker. Once a month it scores a fixed universe of
@@ -100,3 +100,15 @@ to cross-sectional ranking. It is kept frozen as a reference.
 - **Negative results are kept**, in config comments and experiment files —
   rejected ideas stay documented so they don't get retried by accident.
 - 300-line soft / 1000-line hard file limits, type hints, tests per module.
+
+## License
+
+**Free to use, not free to sell.** The code is source-available under a
+non-commercial, attribution license: clone it, fork it, modify it, run it and
+share it for free, as long as you keep the copyright notice and credit this
+project as the original. You may **not** sell it, use it in a commercial
+product or service (including paid signals, newsletters or advisory services),
+or present it as your own work. See [LICENSE](LICENSE) and [TERMS.md](TERMS.md).
+For commercial licensing, open an issue on this repository.
+
+Copyright (c) 2026 Gus Mahfoud. All rights reserved.
