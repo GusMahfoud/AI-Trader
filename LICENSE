@@ -1,21 +1,114 @@
-MIT License
+AI Trader Source-Available License
+Version 1.0, September 2026
 
-Copyright (c) 2026 Gus Mahfoud
+Copyright (c) 2026 Gus Mahfoud. All rights reserved.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+This software and its associated files, documentation, configuration, model
+artifacts and data (together, the "Software") are the copyrighted work of
+Gus Mahfoud (the "Licensor"). The Software is made available for free,
+non-commercial use with attribution. It is NOT licensed under the MIT License
+or any other permissive open-source license: you may not sell it or claim it
+as your own.
+Any earlier license notice that may appear in any copy of the Software is
+superseded by this License for this and all later versions.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+1. GRANT OF LICENSE
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+   Subject to full compliance with this License, the Licensor grants you a
+   worldwide, non-exclusive, non-transferable, non-sublicensable, revocable,
+   royalty-free license to:
+
+   (a) view, study, clone, download, install and run the Software;
+   (b) modify the Software and create derivative works of it; and
+   (c) share the Software, or your modified version of it, with others free
+       of charge (for example as a public fork on GitHub),
+
+   in each case solely for personal, non-commercial, educational or research
+   purposes, and provided that every copy or substantial portion you share
+   keeps this License and the copyright notice above intact and clearly
+   states that the work is based on AI Trader by Gus Mahfoud.
+
+2. RESTRICTIONS
+
+   You may NOT, and may not permit any third party to:
+
+   (a) sell, resell, rent, lease, license, sublicense, or otherwise charge any
+       fee for the Software, any part of it, any modified version of it, or
+       any product or service that is based on, derived from, or incorporates
+       the Software;
+   (b) use the Software, or any output of the Software (including stock picks,
+       rankings, signals, models or backtests), in or to provide any
+       commercial product or service, including paid newsletters, signal
+       services, advisory services, trading services, or
+       software-as-a-service, whether the fee is charged for the Software
+       itself or for something bundled with it;
+   (c) present the Software, or any modified version of it, as your own
+       original work, or remove, obscure or alter any copyright, license or
+       attribution notice contained in the Software;
+   (d) use the name "AI Trader" or the Licensor's name to endorse or promote
+       any product or service, or in a way that suggests the Licensor
+       authored or endorses your modified version, without prior written
+       permission;
+   (e) share the Software or a modified version under any license terms
+       other than this License;
+   (f) use the Software for any purpose that violates applicable law,
+       including securities laws and the terms of service of any third-party
+       data provider the Software relies on.
+
+3. OWNERSHIP
+
+   The Software is licensed, not sold. The Licensor retains all right, title
+   and interest in and to the Software, including all intellectual property
+   rights. No rights are granted by implication, estoppel or otherwise except
+   those expressly set out in this License.
+
+4. CONTRIBUTIONS
+
+   If you submit any code, documentation or other material to the Licensor
+   for inclusion in the Software (a "Contribution"), you grant the Licensor a
+   perpetual, worldwide, irrevocable, royalty-free license to use, reproduce,
+   modify, distribute and sublicense the Contribution as part of the Software
+   under any terms, and you represent that you have the right to grant that
+   license.
+
+5. COMMERCIAL LICENSING
+
+   Any use not permitted by this License, including any commercial use,
+   redistribution or resale, requires a separate written commercial license
+   from the Licensor. To request one, contact the Licensor through the
+   repository at https://github.com/GusMahfoud/AI-Trader.
+
+6. TERMINATION
+
+   This License terminates automatically, without notice, if you breach any
+   of its terms. On termination you must stop all use of the Software and
+   destroy all copies in your possession or control. Sections 3, 6, 7, 8 and
+   9 survive termination.
+
+7. NO WARRANTY
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE, ACCURACY AND NON-INFRINGEMENT. THE
+   SOFTWARE IS A RESEARCH PROJECT. IT DOES NOT PROVIDE INVESTMENT, FINANCIAL,
+   TAX OR LEGAL ADVICE, AND PAST OR BACKTESTED PERFORMANCE IS NOT INDICATIVE
+   OF FUTURE RESULTS.
+
+8. LIMITATION OF LIABILITY
+
+   TO THE MAXIMUM EXTENT PERMITTED BY LAW, IN NO EVENT SHALL THE LICENSOR BE
+   LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL OR
+   EXEMPLARY DAMAGES, INCLUDING TRADING LOSSES, LOST PROFITS OR LOSS OF DATA,
+   ARISING OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THIS LICENSE, EVEN IF
+   ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+
+9. GENERAL
+
+   This License is the entire agreement between you and the Licensor
+   regarding the Software. If any provision is held unenforceable, the
+   remaining provisions remain in effect. This License is governed by the
+   laws of the Province of Ontario and the federal laws of Canada
+   applicable therein, without regard to conflict-of-laws rules, and any
+   dispute shall be brought exclusively in the courts of Ontario, Canada.
+   The Licensor may publish revised versions of this License; each version of
+   the Software is governed by the License text distributed with it.
